@@ -1,0 +1,36 @@
+{
+  "SPUSBHostDataType" : [
+    {
+      "_items" : [
+        {
+          "_name" : "PSSD T7 Shield",
+          "USBDeviceKeyLinkSpeed" : "10 Gb/s",
+          "USBDeviceKeyPowerAllocation" : "4.48 W (896 mA)",
+          "USBDeviceKeyProductID" : "0x61fb",
+          "USBDeviceKeyProductVersion" : "0x0100",
+          "USBDeviceKeySerialNumber" : "S6NPNS0T704117T",
+          "USBDeviceKeyVendorID" : "0x04e8",
+          "USBDeviceKeyVendorName" : "Samsung",
+          "USBKeyHardwareType" : "Removable",
+          "USBKeyLocationID" : "0x01200000"
+        }
+      ],
+      "_name" : "USB 3.1 Bus",
+      "Driver" : "AppleT8132USBXHCI",
+      "USBKeyHardwareType" : "Built-in",
+      "USBKeyLocationID" : "0x01000000"
+    },
+    {
+      "_name" : "USB 3.1 Bus",
+      "Driver" : "AppleT8132USBXHCI",
+      "USBKeyHardwareType" : "Built-in",
+      "USBKeyLocationID" : "0x02000000"
+    },
+    {
+      "_name" : "USB 3.1 Bus",
+      "Driver" : "AppleT8132USBXHCI",
+      "USBKeyHardwareType" : "Built-in",
+      "USBKeyLocationID" : "0x00000000"
+    }
+  ]
+}

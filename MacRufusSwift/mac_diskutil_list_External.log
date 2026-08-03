@@ -1,0 +1,26 @@
+/dev/disk4 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *4.0 TB     disk4
+   1:                        EFI EFI                     209.7 MB   disk4s1
+   2:                 Apple_APFS Container disk5         4.0 TB     disk4s2
+
+/dev/disk5 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +4.0 TB     disk5
+                                 Physical Store disk4s2
+   1:                APFS Volume datahd                  2.8 TB     disk5s1
+
+/dev/disk6 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     Apple_partition_scheme                        +3.1 GB     disk6
+   1:        Apple_partition_map                         4.1 KB     disk6s1
+   2:                  Apple_HFS                         5.2 MB     disk6s2
+                    (free space)                         3.0 GB     -
+
+/dev/disk7 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *2.0 TB     disk7
+   1:       Microsoft Basic Data SAMBACKUP               311.4 GB   disk7s1
+   2:       Microsoft Basic Data SAMSSDP2                1.7 TB     disk7s2
+   3:       Microsoft Basic Data UEFI_NTFS               1.1 MB     disk7s3
+

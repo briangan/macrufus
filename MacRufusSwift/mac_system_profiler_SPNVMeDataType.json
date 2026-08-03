@@ -1,0 +1,85 @@
+{
+  "SPNVMeDataType" : [
+    {
+      "_items" : [
+        {
+          "_name" : "APPLE SSD AP0512Z",
+          "bsd_name" : "disk0",
+          "detachable_drive" : "no",
+          "device_model" : "APPLE SSD AP0512Z",
+          "device_revision" : "2973.120",
+          "device_serial" : "0ba0230ba4b84008",
+          "partition_map_type" : "guid_partition_map_type",
+          "removable_media" : "no",
+          "size" : "500.28 GB",
+          "size_in_bytes" : 500277792768,
+          "smart_status" : "Verified",
+          "spnvme_trim_support" : "Yes",
+          "volumes" : [
+            {
+              "_name" : "iSCPreboot",
+              "bsd_name" : "disk0s1",
+              "iocontent" : "Apple_APFS_ISC",
+              "size" : "524.3 MB",
+              "size_in_bytes" : 524288000
+            },
+            {
+              "_name" : "Macintosh HD",
+              "bsd_name" : "disk0s2",
+              "iocontent" : "Apple_APFS",
+              "size" : "494.38 GB",
+              "size_in_bytes" : 494384795648
+            },
+            {
+              "_name" : "Recovery",
+              "bsd_name" : "disk0s3",
+              "iocontent" : "Apple_APFS_Recovery",
+              "size" : "5.37 GB",
+              "size_in_bytes" : 5368664064
+            }
+          ]
+        }
+      ],
+      "_name" : "Apple SSD Controller"
+    },
+    {
+      "_items" : [
+        {
+          "_name" : "WD_BLACK SN850X 4000GB",
+          "bsd_name" : "disk4",
+          "detachable_drive" : "no",
+          "device_model" : "WD_BLACK SN850X 4000GB",
+          "device_revision" : "624361WD",
+          "device_serial" : "24212X801335",
+          "partition_map_type" : "guid_partition_map_type",
+          "removable_media" : "no",
+          "size" : "4 TB",
+          "size_in_bytes" : 4000787030016,
+          "smart_status" : "Verified",
+          "spnvme_linkspeed" : "16.0 GT/s",
+          "spnvme_linkwidth" : "x4",
+          "spnvme_trim_support" : "Yes",
+          "volumes" : [
+            {
+              "_name" : "EFI",
+              "bsd_name" : "disk4s1",
+              "file_system" : "MS-DOS FAT32",
+              "iocontent" : "EFI",
+              "size" : "209.7 MB",
+              "size_in_bytes" : 209715200,
+              "volume_uuid" : "0E239BC6-F960-3107-89CF-1C97F78BB46B"
+            },
+            {
+              "_name" : "datahd",
+              "bsd_name" : "disk4s2",
+              "iocontent" : "Apple_APFS",
+              "size" : "4 TB",
+              "size_in_bytes" : 4000577273856
+            }
+          ]
+        }
+      ],
+      "_name" : "Generic SSD Controller"
+    }
+  ]
+}
