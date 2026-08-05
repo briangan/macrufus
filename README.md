@@ -4,6 +4,8 @@ The open-source Windows program [Rufus](https://rufus.ie/en/) is useful free too
 
 The framework used is Swift UI within MacRufusSwift subfolder.  Since I have only little knowledge of Swift and desktop app programming, I'm using Claude Sonnet 4.6 to generate the basic structure of the app, and further modifications as I keep test and find issues.  There's also consideration of using Electron framework to enforce cross-OS compatibility.  But the problem found so far really requires a pack of library and executives in large space size, compared to Mac-native version in small space size like less than 1 MB.
 
+==========================================
+
 # Methods to Collect Device Information
 
 ## Mac OS Device Information
@@ -33,3 +35,10 @@ system_profiler SPNVMeDataType -json
 ```
 
 The samples of output are logged within MacRufusSwift: mac_system_profiler_SPNVMeDataType.json and mac_system_profiler_SPUSBHostDataType.json
+
+=============================================
+
+# TODOs
+
+* Device name is missing in using `diskutil` to collet device info.
+* Might have to try using `system_profiler` to collect
