@@ -133,11 +133,33 @@ struct ContentView: View {
                     .font(.system(size: 13))
                     .foregroundColor(.overlay0)
             }
-            .padding(.top, 16)
-            .padding(.bottom, 20)
+            .padding(.vertical, 16)
 
-            // Toolbar
+            // Device header
+
+            headerWithDivider(title: "Device")
+
+            // Device selector row
             HStack(spacing: 12) {
+                boldLabel("Select Drive: ")
+                
+                Picker("", selection: $selectedDriveID) {
+                    if service.drives.isEmpty {
+                        Text("No external drives found").tag(Optional<String>.none)
+                    }
+                    ForEach(service.drives) { drive in
+                        HStack {
+                            Image(systemName: drive.protocolIcon)
+                            Text("\(drive.name)  ·  \(drive.id)  ·  \(drive.size)")
+                        }
+                        .tag(Optional(drive.id))
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
+                .disabled(service.drives.isEmpty || service.isLoading)
+                .padding(.trailing, 8)
+
                 Button(action: {
                     service.refresh()
                 }) {
@@ -159,31 +181,6 @@ struct ContentView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.overlay0)
             }
-            .padding(.bottom, 16)
-
-            // Device selector row
-            HStack(spacing: 12) {
-                Text("Device")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.subtext1)
-                    .frame(width: 60, alignment: .leading)
-
-                Picker("", selection: $selectedDriveID) {
-                    if service.drives.isEmpty {
-                        Text("No external drives found").tag(Optional<String>.none)
-                    }
-                    ForEach(service.drives) { drive in
-                        HStack {
-                            Image(systemName: drive.protocolIcon)
-                            Text("\(drive.name)  ·  \(drive.id)  ·  \(drive.size)")
-                        }
-                        .tag(Optional(drive.id))
-                    }
-                }
-                .labelsHidden()
-                .frame(maxWidth: .infinity)
-                .disabled(service.drives.isEmpty || service.isLoading)
-            }
             .padding(.bottom, 20)
 
             // Body – details for selected drive
@@ -196,12 +193,11 @@ struct ContentView: View {
                     .transition(.opacity)
             }
 
+            headerWithDivider(title: "Image")
+
             // Image selector row
             HStack(spacing: 12) {
-                Text("Image")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.subtext1)
-                    .frame(width: 60, alignment: .leading)
+                boldLabel("Select Image: ")
 
                 // File label with folder-path tooltip
                 Text(selectedImageURL?.lastPathComponent ?? "No image selected")
@@ -220,7 +216,46 @@ struct ContentView: View {
             }
             .padding(.top, 16)
 
-            Spacer(minLength: 0)
+            // Format Options header
+            headerWithDivider(title: "Format Options")
+
+            // Volume label row
+            HStack(spacing: 12) {
+                boldLabel("Volume Label: ")
+                TextField("Enter volume label", text: .constant(""))
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, 8)
+
+            // File system, Cluster size
+            HStack(spacing: 12) {
+                boldLabel("File System: ")
+                // default selection is "NTFS"
+                Picker("", selection: .constant("ntfs")) {
+                    Text("NTFS").tag("ntfs")
+                    Text("FAT32").tag("fat32")
+                    Text("exFAT").tag("exfat")
+                }
+
+                Spacer(minLength: 20)
+
+                boldLabel("Cluster Size: ")
+                Picker("", selection: .constant("4096")) {
+                    Text("4096 bytes (Default)").tag("4096")
+                    Text("8192 bytes").tag("8192")
+                    Text("16 kilobytes").tag("16384")
+                    Text("32 kilobytes").tag("32768")
+                    Text("64 kilobytes").tag("65536")
+                }
+            }
+            .padding(.vertical, 8)
+
+            // Status
+            headerWithDivider(title: "Status")
+
+            // Label
+
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 28)
@@ -229,8 +264,9 @@ struct ContentView: View {
         .onAppear { service.refresh() }
         .onChange(of: service.drives) { _ in syncSelection() }
     }
+    // end of body
 
-    private func browseForImage() {
+    func browseForImage() {
         let panel = NSOpenPanel()
         panel.title = "Select a disk image"
         panel.allowedContentTypes = [
@@ -249,13 +285,13 @@ struct ContentView: View {
         }
     }
 
-    private var statusText: String {        if service.isLoading { return "Scanning…" }
+    var statusText: String {        if service.isLoading { return "Scanning…" }
         let n = service.drives.count
         if n == 0 { return "No external drives found." }
         return "\(n) drive\(n != 1 ? "s" : "") found."
     }
 
-    private var emptyView: some View {
+    var emptyView: some View {
         VStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 48))
@@ -270,7 +306,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func errorView(_ msg: String) -> some View {
+    func errorView(_ msg: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
@@ -284,6 +320,28 @@ struct ContentView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    func headerWithDivider(title: String) -> some View {
+        HStack(spacing: 2) {
+            Text(title)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.subtext1)
+                .padding(.trailing, 4)
+
+            VStack(alignment: .center, spacing: 0) {
+                Divider()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+    }
+
+    func boldLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(.subtext1)
+            .padding(.trailing, 4)
     }
 }
 

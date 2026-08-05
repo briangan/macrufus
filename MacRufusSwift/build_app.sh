@@ -6,10 +6,10 @@ APP_NAME="MacRufus"
 APP_BUNDLE="${APP_NAME}.app"
 EXECUTABLE="MacRufusSwift"
 
-echo "==> Generating app icon..."
-swift generate_icon.swift
-iconutil -c icns AppIcon.iconset -o Resources/AppIcon.icns
-echo "  ✓ Resources/AppIcon.icns created"
+#echo "==> Generating app icon..."
+#swift generate_icon.swift
+#iconutil -c icns AppIcon.iconset -o Resources/AppIcon.icns
+#echo "  ✓ Resources/AppIcon.icns created"
 
 echo "==> Building Swift package (release)..."
 swift build -c release
