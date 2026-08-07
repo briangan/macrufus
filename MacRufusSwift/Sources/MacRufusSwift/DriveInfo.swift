@@ -34,16 +34,21 @@ final class DiskUtilService: ObservableObject {
         errorMessage = nil
 
         Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+
             do {
                 let result = try await Self.loadDrives()
+
+                print("Loaded count of drives: \(result.count)") // TODO: Remove debug print
+                
                 await MainActor.run {
-                    self?.drives = result
-                    self?.isLoading = false
+                    self.drives = result
+                    self.isLoading = false
                 }
             } catch {
                 await MainActor.run {
-                    self?.errorMessage = error.localizedDescription
-                    self?.isLoading = false
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
                 }
             }
         }

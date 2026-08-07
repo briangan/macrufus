@@ -27,6 +27,9 @@ extension Color {
     }
 }
 
+// Array of supported image file extensions in String for the file picker
+let supportedImageExtensions = ["iso", "img", "dmg", "vhd", "vhdx", "bin", "raw"]
+
 // MARK: - Drive card
 
 struct DriveCardView: View {
@@ -109,6 +112,7 @@ struct Badge: View {
 
 struct ContentView: View {
     @StateObject private var service = DiskUtilService()
+    @StateObject private var diskWriterService: DiskWriterService = DiskWriterService()
     @State private var selectedDriveID: String? = nil
     @State private var selectedImageURL: URL? = nil
 
@@ -254,12 +258,50 @@ struct ContentView: View {
             // Status
             headerWithDivider(title: "Status")
 
-            // Label
+            // Process bar with status text
+            HStack(spacing: 10) {
+                ProgressView(value: 0.0, total: 1.0)
+                    .progressViewStyle(LinearProgressViewStyle(tint: .mauve))
+                Spacer()
+                Text("Ready")
+                    .font(.system(size: 12))
+                    .foregroundColor(.overlay0)
+            }
 
+            Divider()
+            .padding(.vertical, 12)
+            
+            // Write button
+            HStack(spacing: 12) {
+                Spacer()
+                Button(action: {
+                    let imagePath = selectedImageURL?.path ?? ""
+                    let errorMessage: String = diskWriterService.checkWriteOperation(drive: selectedDrive!, imageFilePath: imagePath)
+                    print("Error message from checkWriteOperation: \(errorMessage)")
+                    let msg = errorMessage.isEmpty ? "" : errorMessage
+                    if !msg.isEmpty {
+                        // Show an alert with the error message
+                        let alert = NSAlert()
+                        alert.messageText = "Error"
+                        alert.informativeText = msg
+                        alert.alertStyle = .warning
+                        alert.addButton(withTitle: "OK")
+                        alert.runModal()
+                    } else {
+                        // Proceed with the write operation
+                        // diskWriterService.writeDisk(drive: selectedDrive!, imageFilePath: selectedImageURL!.path)
+                    }
+                }) {
+                    Label("Write", systemImage: "arrow.down.circle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                }
+                .buttonStyle(PillButtonStyle())
+                // .disabled(service.drives.isEmpty || service.isLoading)
+            }
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 28)
-        .frame(minWidth: 600, minHeight: 300)
+        .frame(minWidth: 600, minHeight: 340)
         .background(Color.base.ignoresSafeArea())
         .onAppear { service.refresh() }
         .onChange(of: service.drives) { _ in syncSelection() }
@@ -269,15 +311,7 @@ struct ContentView: View {
     func browseForImage() {
         let panel = NSOpenPanel()
         panel.title = "Select a disk image"
-        panel.allowedContentTypes = [
-            .init(filenameExtension: "iso")!,
-            .init(filenameExtension: "img")!,
-            .init(filenameExtension: "dmg")!,
-            .init(filenameExtension: "vhd")!,
-            .init(filenameExtension: "vhdx")!,
-            .init(filenameExtension: "bin")!,
-            .init(filenameExtension: "raw")!,
-        ]
+        panel.allowedContentTypes = supportedImageExtensions.compactMap { .init(filenameExtension: $0) }
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         if panel.runModal() == .OK {

@@ -1,4 +1,5 @@
+.vscode
 /electron-app
-/rufus
+/rufus/*
 /MacRufusSwift/.build
 /MacRufusSwift/mac_system_profiler.json
