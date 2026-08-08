@@ -1,112 +1,6 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Catppuccin Mocha palette
-
-extension Color {
-    static let crust      = Color(hex: 0x11111B)
-    static let base       = Color(hex: 0x1E1E2E)
-    static let mantle     = Color(hex: 0x181825)
-    static let surface0   = Color(hex: 0x313244)
-    static let surface1   = Color(hex: 0x45475A)
-    static let overlay0   = Color(hex: 0x6C7086)
-    static let subtext1   = Color(hex: 0xA6ADC8)
-    static let text       = Color(hex: 0xCDD6F4)
-    static let lavender   = Color(hex: 0xB4BEFE)
-    static let mauve      = Color(hex: 0xCBA6F7)
-    static let blue       = Color(hex: 0x89B4FA)
-    static let green      = Color(hex: 0xA6E3A1)
-    static let red        = Color(hex: 0xF38BA8)
-
-    init(hex: UInt32) {
-        self.init(
-            red:   Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8)  & 0xFF) / 255,
-            blue:  Double( hex        & 0xFF) / 255
-        )
-    }
-}
-
-// Array of supported image file extensions in String for the file picker
-let supportedImageExtensions = ["iso", "img", "dmg", "vhd", "vhdx", "bin", "raw"]
-
-// MARK: - Drive card
-
-struct DriveCardView: View {
-    let drive: DriveInfo
-
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: drive.protocolIcon)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 34, height: 34)
-                .foregroundColor(.mauve)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(drive.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.text)
-
-                HStack(spacing: 4) {
-                    Text("Name:")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.subtext1)
-                    Text(drive.name)
-                        .font(.system(size: 12))
-                        .foregroundColor(.overlay0)
-                }
-
-                HStack(spacing: 8) {
-                    Badge(drive.id)
-                    Badge(drive.busProtocol, color: .blue)
-                    Badge(drive.mountPoint)
-                    if drive.isRemovable { Badge("Removable") }
-                }
-            }
-
-            Spacer()
-
-            Text(drive.size)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.green)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(Color.surface0)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.surface1, lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Badge
-
-struct Badge: View {
-    let text: String
-    let color: Color
-
-    init(_ text: String, color: Color = .subtext1) {
-        self.text  = text
-        self.color = color
-    }
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(color == .subtext1 ? Color.surface1 : Color.surface0)
-            .overlay(
-                Capsule()
-                    .stroke(color == .subtext1 ? Color.clear : color, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-    }
-}
 
 // MARK: - Content view
 
@@ -115,16 +9,47 @@ struct ContentView: View {
     @StateObject private var diskWriterService: DiskWriterService = DiskWriterService()
     @State private var selectedDriveID: String? = nil
     @State private var selectedImageURL: URL? = nil
+    @State private var hasEnoughToClickWrite: Bool = false
 
     /// Keep selectedDriveID in sync whenever the drive list changes.
     private func syncSelection() {
         if let id = selectedDriveID, service.drives.contains(where: { $0.id == id }) { return }
         selectedDriveID = service.drives.first?.id
+        updateWriteButtonState()
     }
 
     private var selectedDrive: DriveInfo? {
         service.drives.first { $0.id == selectedDriveID }
     }
+
+    private func updateWriteButtonState() {
+        diskWriterService.driveInfo = selectedDrive
+        diskWriterService.imageFilePath = selectedImageURL?.path
+        let enoughInfo = selectedDrive != nil && selectedImageURL != nil
+
+        print("Is enough info to enable write button? \(enoughInfo)")
+        hasEnoughToClickWrite = enoughInfo
+    }
+    
+    private func clickToWrite() {
+        let imagePath = selectedImageURL?.path ?? ""
+        let errorMessage: String = diskWriterService.checkWriteOperation(drive: selectedDrive!, imageFilePath: imagePath)
+        print("Error message from checkWriteOperation: \(errorMessage)")
+        if !errorMessage.isEmpty {
+            // Show an alert with the error message
+            let alert = NSAlert()
+            alert.messageText = "Cannot write to drive"
+            alert.informativeText = errorMessage
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        } else {
+            // Proceed with the write operation
+            diskWriterService.writeDisk()
+        }
+    }
+
+    ///////////////////////////////////////////
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -132,7 +57,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("MacRufus")
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.mauve)
+                    .foregroundColor(.primary)
                 Text("Drive image writer to external drives and USB sticks. Supports ISO, IMG, DMG, and more.")
                     .font(.system(size: 13))
                     .foregroundColor(.overlay0)
@@ -176,7 +101,7 @@ struct ContentView: View {
                 if service.isLoading {
                     ProgressView()
                         .scaleEffect(0.7)
-                        .progressViewStyle(CircularProgressViewStyle(tint: .mauve))
+                        .progressViewStyle(CircularProgressViewStyle(tint: .primary))
                 }
 
                 Spacer()
@@ -218,7 +143,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(PillButtonStyle())
             }
-            .padding(.top, 16)
+            .padding(.bottom, 16)
 
             // Format Options header
             headerWithDivider(title: "Format Options")
@@ -261,7 +186,7 @@ struct ContentView: View {
             // Process bar with status text
             HStack(spacing: 10) {
                 ProgressView(value: 0.0, total: 1.0)
-                    .progressViewStyle(LinearProgressViewStyle(tint: .mauve))
+                    .progressViewStyle(LinearProgressViewStyle(tint: .primary))
                 Spacer()
                 Text("Ready")
                     .font(.system(size: 12))
@@ -274,36 +199,27 @@ struct ContentView: View {
             // Write button
             HStack(spacing: 12) {
                 Spacer()
+
                 Button(action: {
-                    let imagePath = selectedImageURL?.path ?? ""
-                    let errorMessage: String = diskWriterService.checkWriteOperation(drive: selectedDrive!, imageFilePath: imagePath)
-                    print("Error message from checkWriteOperation: \(errorMessage)")
-                    let msg = errorMessage.isEmpty ? "" : errorMessage
-                    if !msg.isEmpty {
-                        // Show an alert with the error message
-                        let alert = NSAlert()
-                        alert.messageText = "Error"
-                        alert.informativeText = msg
-                        alert.alertStyle = .warning
-                        alert.addButton(withTitle: "OK")
-                        alert.runModal()
-                    } else {
-                        // Proceed with the write operation
-                        // diskWriterService.writeDisk(drive: selectedDrive!, imageFilePath: selectedImageURL!.path)
+                    self.disabled(!hasEnoughToClickWrite)
+                    if hasEnoughToClickWrite {
+                        clickToWrite()
                     }
                 }) {
-                    Label("Write", systemImage: "arrow.down.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    Label("Write", systemImage: "externaldrive.fill.badge.plus")
+                        .font(.system(size: 15, weight: .semibold))
                 }
-                .buttonStyle(PillButtonStyle())
-                // .disabled(service.drives.isEmpty || service.isLoading)
+                .buttonStyle(PillButtonStyle(isSecondary: true))
+                
             }
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 28)
         .frame(minWidth: 600, minHeight: 340)
         .background(Color.base.ignoresSafeArea())
-        .onAppear { service.refresh() }
+        .onAppear { 
+            service.refresh()
+        }
         .onChange(of: service.drives) { _ in syncSelection() }
     }
     // end of body
@@ -316,6 +232,9 @@ struct ContentView: View {
         panel.canChooseDirectories = false
         if panel.runModal() == .OK {
             selectedImageURL = panel.url
+            diskWriterService.imageFilePath = selectedImageURL?.path
+
+            updateWriteButtonState()
         }
     }
 
@@ -356,6 +275,9 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    /* Look: 
+    Device --------------------------------------
+    */
     func headerWithDivider(title: String) -> some View {
         HStack(spacing: 2) {
             Text(title)
@@ -377,18 +299,6 @@ struct ContentView: View {
             .foregroundColor(.subtext1)
             .padding(.trailing, 4)
     }
-}
+} // ContentView
 
-// MARK: - Button style
 
-struct PillButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundColor(.base)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 8)
-            .background(configuration.isPressed ? Color.lavender : Color.mauve)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}

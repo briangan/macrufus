@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>top-level-items</key>
+	<array>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>166</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>165</string>
+					<key>Timestamp</key>
+					<string>807816398.296755</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>Sources/MacRufusSwift/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>    private func makeWriteButton() -&gt; Button {
+</string>
+				<key>leading</key>
+				<string>
+    // Make writeButton
+</string>
+				<key>trailing</key>
+				<string>        writeButton = Button("Write", systemImage: "externaldrive.fill.badge.plus", action: clickToWrite)
+        /* {
+            Label("Write", `systemImage: "externaldrive.fill.badge.plus")`
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>120</string>
+					<key>StartingColumnNumber</key>
+					<string>56</string>
+					<key>StartingLineNumber</key>
+					<string>119</string>
+					<key>Timestamp</key>
+					<string>807816722.324484</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>Sources/MacRufusSwift/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>
+</string>
+				<key>leading</key>
+				<string>
+    // Declare the button as an instance variable
+    @State private var writeButton: Button&lt;Label&gt;? = nil</string>
+				<key>trailing</key>
+				<string>
+    /// Keep selectedDriveID in sync whenever the drive list changes.
+    private func syncSelection() {
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>323</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>322</string>
+					<key>Timestamp</key>
+					<string>807816507.7587349</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>Sources/MacRufusSwift/ContentView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>            // Write button
+</string>
+				<key>leading</key>
+				<string>            .padding(.vertical, 12)
+            
+</string>
+				<key>trailing</key>
+				<string>            HStack(spacing: 12) {
+                Spacer()
+                AnyView(makeWriteButton())
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+	</array>
+</dict>
+</plist>

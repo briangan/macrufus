@@ -4,20 +4,22 @@ import Foundation
 DiskWriterService is a class that handles the writing of an image file to a disk drive. It uses the DiskUtilService library to perform the actual writing operation. The class is designed to be used in a SwiftUI application, and it provides a way to track the progress of the writing operation.
 */
 final class DiskWriterService: ObservableObject {
-    // ... existing code ...
+    @Published var isWriting  = false
+    @Published var progress: Double = 0.0
+    @Published var driveInfo: DriveInfo? = nil
+    @Published var imageFilePath: String? = nil
 
     // Write a function to check selected drive and image file
     // @return "" if everything is okay, or an error message string if there is an issue
     func checkWriteOperation(drive: DriveInfo, imageFilePath: String) -> String {
-        print("Checking write operation for drive \(drive) \nand image file \(imageFilePath)")
+        // print("Checking write operation for drive \(drive) \nand image file \(imageFilePath)")
+        
         // Check if the drive is not nil and drive.id is not empty
         guard !drive.id.isEmpty else {
-            print("Drive is nil or drive.id is empty: \(drive)")
             return "Selected drive is invalid."
         }
         // Check if the drive is removable
         guard drive.isRemovable else {
-            print("Drive \(drive.name) is not removable.")
             return "Selected drive is not removable."
         }
         print("Drive \(drive.name) is removable and has id \(drive.id).")
@@ -25,7 +27,6 @@ final class DiskWriterService: ObservableObject {
         // Check if imageFilePath is not nil 
         let p : String? = imageFilePath
         guard p != nil else {
-            print("imageFilePath is nil")
             return "No image file selected." 
         }
         // not empty
@@ -51,11 +52,29 @@ final class DiskWriterService: ObservableObject {
         return "" // Everything is okay
     }
 
-    /* func writeDisk(drive: DriveInfo, imageFilePath: String) {
+    func isReadyToWrite() -> Bool {
+        guard let drive = driveInfo, let imagePath = imageFilePath else {
+            return false
+        }
+        let checkResult = checkWriteOperation(drive: drive, imageFilePath: imagePath)
+        return checkResult.isEmpty
+    }
+
+    // @return : Bool indicating whether the write operation was initiated successfully
+    func writeDisk() -> Bool {
       // Assuming DriveInfo is a struct and it's imported from DriveInfo.swift
+      let isReady = isReadyToWrite()
+      guard isReady else {
+          print("Write operation check failed.")
+          return false
+      }
+
+      isWriting = true
       
-      print("Starting write operation from \(imageFilePath) to drive \(drive.name)")
-    } */
+      print("Starting write operation from \(imageFilePath ?? "Unknown") to drive \(driveInfo?.name ?? "Unknown")")
+
+      return true
+    }
     
     // ... rest of code ...
 }
