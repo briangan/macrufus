@@ -1,7 +1,6 @@
 import SwiftUI
 
 // Array of supported image file extensions in String for the file picker
-let supportedImageExtensions = ["iso", "img", "dmg", "vhd", "vhdx", "bin", "raw"]
 
 // MARK: - Drive card
 

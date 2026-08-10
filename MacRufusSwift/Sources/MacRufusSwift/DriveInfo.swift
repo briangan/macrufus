@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Model
 
 struct DriveInfo: Identifiable, Equatable {
-    let id: String          // e.g. "disk2"
+    var id: String = "" // e.g. "disk2"
     var name: String
     var deviceName: String  // e.g. "WD_BLACK SN850X 4000GB" from system_profiler
     var size: String

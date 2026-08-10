@@ -10,7 +10,7 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 ## Development So Far
 
 * 2026-08-07: It's been a week of part-time work on a fresh framework.
-  * The initial Claud-generated draft of the app was slim but was successful built and capable of showing the windows with title only.
+  * The initial Claud-generated draft of the app was slim but was successful built and capable of showing the window with title only.
   * Then I started experimenting with the syntax of Swift in comparison of the brief IOS framework I had learned in the past.  Swift is neat in its short and clean syntax.  Its data type restrictions can ensure the application running efficiently as well as giving me trouble to figure out what types to use where and when.
   * Local AI's performance has been acceptable.  Simple language or framework specific questions can be answered within tens of seconds with clarity.  
   * However, when the context of codes, its analysis can take a minute or two.  The UI of Copilot using local models definitely has difference: local AI's answer to prompt returns some JSON output, for example with keys of type, old_code, and new_code.  Thus the answer UI is not clean by requiring the user to click more to reach the answer, compared to GPT or Claude where explanation, returning questions and code suggestions with code comparisons are immediately displayed without need of extra user interactions.
@@ -58,5 +58,5 @@ The samples of output are logged within MacRufusSwift: mac_system_profiler_SPNVM
 * Partition Options: partition scheme, target system
 * Format Options section: file system, cluster size
 * Status section: progress bar, status text
-* Partitioning process
-* Write image to drive, and update progress bar
+* Write image to drive using dd, and update progress bar
+* Partitioning process using diskutil

@@ -11,6 +11,9 @@ struct ContentView: View {
     @State private var selectedImageURL: URL? = nil
     @State private var hasEnoughToClickWrite: Bool = false
 
+    // @State private var progressStatusText: String = ""
+    // @State private var progressStatusResult: String = ""
+
     /// Keep selectedDriveID in sync whenever the drive list changes.
     private func syncSelection() {
         if let id = selectedDriveID, service.drives.contains(where: { $0.id == id }) { return }
@@ -37,14 +40,12 @@ struct ContentView: View {
         print("Error message from checkWriteOperation: \(errorMessage)")
         if !errorMessage.isEmpty {
             // Show an alert with the error message
-            let alert = NSAlert()
-            alert.messageText = "Cannot write to drive"
-            alert.informativeText = errorMessage
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            popupAlert(title: "Error", message: errorMessage)
+            
         } else {
             // Proceed with the write operation
+            diskWriterService.driveInfo = selectedDrive
+            diskWriterService.imageFilePath = imagePath
             diskWriterService.writeDisk()
         }
     }
@@ -79,7 +80,7 @@ struct ContentView: View {
                     ForEach(service.drives) { drive in
                         HStack {
                             Image(systemName: drive.protocolIcon)
-                            Text("\(drive.name)  ·  \(drive.id)  ·  \(drive.size)")
+                            Text("\(drive.name)  ·  \(drive.id)  ·  \(drive.size)").font(.system(size: 15))
                         }
                         .tag(Optional(drive.id))
                     }
@@ -159,6 +160,15 @@ struct ContentView: View {
 
             // File system, Cluster size
             HStack(spacing: 12) {
+                boldLabel("Partition Scheme: ")
+                // default selection is "GPT"
+                Picker("", selection: .constant("gpt")) {
+                    Text("GPT").tag("gpt")
+                    Text("MBR").tag("mbr")
+                }
+
+                Spacer(minLength: 20)
+
                 boldLabel("File System: ")
                 // default selection is "NTFS"
                 Picker("", selection: .constant("ntfs")) {
@@ -169,7 +179,7 @@ struct ContentView: View {
 
                 Spacer(minLength: 20)
 
-                boldLabel("Cluster Size: ")
+                boldLabel("Block Size: ")
                 Picker("", selection: .constant("4096")) {
                     Text("4096 bytes (Default)").tag("4096")
                     Text("8192 bytes").tag("8192")
@@ -298,6 +308,15 @@ struct ContentView: View {
             .font(.system(size: 13, weight: .semibold))
             .foregroundColor(.subtext1)
             .padding(.trailing, 4)
+    }
+
+    func popupAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 } // ContentView
 
