@@ -9,7 +9,8 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 
 ## Development So Far
 
-* 2026-08-07: It's been a week of part-time work on a fresh framework.
+* __2026-08-07__: 
+  * It's been a week of part-time work on a fresh framework.
   * The initial Claud-generated draft of the app was slim but was successful built and capable of showing the window with title only.
   * Then I started experimenting with the syntax of Swift in comparison of the brief IOS framework I had learned in the past.  Swift is neat in its short and clean syntax.  Its data type restrictions can ensure the application running efficiently as well as giving me trouble to figure out what types to use where and when.
   * Local AI's performance has been acceptable.  Simple language or framework specific questions can be answered within tens of seconds with clarity.  
@@ -25,7 +26,7 @@ Since my paid CoPilot premium usage for August was already eaten by early prompt
 
 * __llama3.1:8b__ - More like general technical knowledge assitant.  Only briefly used it to resolve coding problems, so not sure how well it performs.
 * __gemma4:2b__ - Actually pretty good in analyzing the context of codes, and suggesting solutions.  After typing the class or function synopsis and functionalities, its autocomplete and correction suggestions have been helpful.  For example, once one variable has data type changed, it can auto-correct the other spots of data type for change.  However, its code block generation is sometimes confusing with wrong syntax, and for newbie like me who does not know much about Swift system would be little painful.
-* __gemma4:4b__ - This model requires more than 10GB of memory, so would push the MBP to use swap.  So have not used it much.  Will try running in PC.
+* __gemma4:4b__ - This model requires more than 10GB of memory, so would push the MBP to use swap and heats up the laptop quickly because of intensive GPU usage.  So have not used it much.  One time when a tricky Swift build error could not be resolved by other models, I intentionally switched to this, and it solved it.  I guess this is good choice for little more complexity.  Will try running in PC.
 * __qwen2.5-coder-7b__ - Originally by its name, expected coder to be at least capable of helping out on coding.  But the prompts within some context cannot be correct all the time.  Any big task like code generation of a function would be given inaccurate or incomplete suggestions.  Simpler corrections and documentation queries are still good enough.
 
 
@@ -72,3 +73,7 @@ The samples of output are logged within MacRufusSwift: mac_system_profiler_SPNVM
 * Status section: progress bar, status text
 * Write image to drive using dd, and update progress bar
 * Partitioning process using diskutil
+
+# Difficult Rufus Features
+
+* Upon recognition of the image is a Windows 11 installation, Rufus has extra options to help user to skip out or turn off Windows' privacy or bloat content at initial installation.  Certainly these need more knowledge of tricks to counter Microsoft's doings, and reviewing over Rufus' C++ codes would not be easy.
