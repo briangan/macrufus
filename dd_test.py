@@ -63,17 +63,18 @@ def simulate_disk_transfer(total_bytes: int, transfer_speed_bps: int):
 if __name__ == "__main__":
     # --- Configuration ---
     # Total size of the disk image/file to transfer (e.g., 109051904 bytes = 100 MiB)
-    TOTAL_SIZE_BYTES = 109051904  
     
-    # Transfer speed in bits per second (bps). Example: 100 MB/s * 8 bits/byte
-    TRANSFER_SPEED_BPS = 800000  # 800 bps (800 bits per second)
+    # Transfer speed in bytes per second (Bps). Example: 100 MB/s * 8 bits/byte
+    TRANSFER_SPEED_BPS = 800000  # 800 Bps (800 bytes per second)
+
+    TOTAL_SIZE_BYTES = TRANSFER_SPEED_BPS * 60
 
     print(f"--- Disk Transfer Simulation ---")
     print(f"Total size to transfer: {TOTAL_SIZE_BYTES} bytes")
     print(f"Transfer speed set to: {TRANSFER_SPEED_BPS / (1024*1024*1024):.2f} GB/s\n")
 
     # Print estimated time to complete the transfer
-    estimated_time = TOTAL_SIZE_BYTES * 8 / TRANSFER_SPEED_BPS  # in seconds
+    estimated_time = TOTAL_SIZE_BYTES / TRANSFER_SPEED_BPS  # in seconds
     print(f"Estimated time to complete transfer: {estimated_time:.2f} seconds\n")
 
     simulate_disk_transfer(TOTAL_SIZE_BYTES, TRANSFER_SPEED_BPS)
