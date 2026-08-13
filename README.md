@@ -9,6 +9,13 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 
 ## Development So Far
 
+* __2026-08-13__: 
+  * After last week's UI work, this week has been tougher because of backend obstacles when working on this part-time.
+  * The main obstacle is running the image writing in background internally while still able to capture its continuous progress stats for conversion into UI's progress bar and stats.
+  * AI responses to prompts for the above are just either incomplete or unstable.  Rather, I have to search online for postings and answers to this topic.
+  * After a few trials, at least I found the convenient stable Swift library Subprocess to run command with clean code and enough call backs for execution status change and output pipes.
+  * But because DD or my simulated script re-renders the same line for stat updates, output streaming just does not recognize new lines, which is the trigger for realizing new content and proceeding to capture that.  Need some workaround.
+
 * __2026-08-07__: 
   * It's been a week of part-time work on a fresh framework.
   * The initial Claud-generated draft of the app was slim but was successful built and capable of showing the window with title only.
