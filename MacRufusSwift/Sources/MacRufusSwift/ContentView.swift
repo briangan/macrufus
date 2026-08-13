@@ -216,10 +216,11 @@ struct ContentView: View {
                         clickToWrite()
                     }
                 }) {
-                    Label("Write", systemImage: "externaldrive.fill.badge.plus")
+                    Label(diskWriterService.isWriting ? "Writing…" : "Write", systemImage: "externaldrive.fill.badge.plus")
                         .font(.system(size: 15, weight: .semibold))
                 }
                 .buttonStyle(PillButtonStyle(isSecondary: true))
+                .disabled(!hasEnoughToClickWrite || diskWriterService.isWriting)
                 
             }
         }

@@ -92,17 +92,16 @@ final class DiskWriterService: ObservableObject {
   //===================================
   // Simulate the dd command output for testing purposes. This function generates a series of progress status lines that mimic what dd would output during a real write operation.
   func runPythonDDTest(progressHandler: @escaping (DiskOperationProgress) -> Void) {
-    // print("Running Python script to simulate dd command output...")
-    print("What the hell is going on here?")
-    // print("Log file: \(logURL().path)")
+    print("Running Python script to simulate dd command output...")
+    print("Log file: \(logURL().path)")
 
-    /*
     Task { @MainActor in
         do {
-            try await runSubprocess(cmd: "/opt/anaconda3/envs/comfy-env/bin/python", args: ["../dd_test.py"], outputHandler: { line in
+            try await runSubprocess(cmd: "python", args: ["../dd_test.py"], outputHandler: { line in
                 writeToLogFile(message: line, at: logURL())
 
                 if let progressUpdate = self.parseDDProgressStatus(line) {
+                    writeToLogFile(message: "Progress update: \(progressUpdate)", at: logURL())
                     progressHandler(progressUpdate)
                 }
             }, errorHandler: { line in
@@ -112,7 +111,6 @@ final class DiskWriterService: ObservableObject {
             print("Error running subprocess: \(error)")
         }
     }
-    */
   }
 
 

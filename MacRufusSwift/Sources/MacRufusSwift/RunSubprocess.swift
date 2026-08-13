@@ -12,7 +12,6 @@ func logURL() -> URL {
 func runSubprocess(cmd : String, args : Arguments, outputHandler: ((String) -> Void)?, errorHandler: ((String) -> Void)?) async throws {
   // Let's make a local log file to capture the output of the subprocess for debugging purposes.
 
-  outputHandler?("Log file: \(logURL().path)")
   outputHandler?("Running subprocess: \(cmd) \(args)")
   
   let result = try await run(
@@ -22,21 +21,20 @@ func runSubprocess(cmd : String, args : Arguments, outputHandler: ((String) -> V
         output: .sequence,
         error: .sequence
     ) { execution in
-          for try await line in execution.standardOutput.strings() {
-            outputHandler?(line)
-            writeToLogFile(message: line, at: logURL())
-            print("| \(line)")
-          }
-          for try await line in execution.standardError.strings() {
-            errorHandler?(line)
-            writeToLogFile(message: line, at: logURL())
-            print("* \(line)")
-          }
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                for try await line in execution.standardOutput.strings(bufferingPolicy: .maxLineLength(256) ) {
+                    outputHandler?(line)
+                }
+            }
+            group.addTask {
+                for try await line in execution.standardError.strings(bufferingPolicy: .maxLineLength(256) ) {
+                    errorHandler?(line)
+                }
+            }
+            try await group.waitForAll()
+        }
     }
-
-  print(result.processIdentifier) // e.g. 1234
-  print(result.terminationStatus) // e.g. exited(0)
-  print(result.standardOutput ?? "") // e.g. "Hello, World!\n"
 }
 
 // MARK: - Calling async functions from sync contexts
