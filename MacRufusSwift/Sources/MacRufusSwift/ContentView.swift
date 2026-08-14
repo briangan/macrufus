@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var selectedDriveID: String? = nil
     @State private var selectedImageURL: URL? = nil
     @State private var hasEnoughToClickWrite: Bool = false
+    @State private var progressPercentage: Double = 0.0
 
     // @State private var progressStatusText: String = ""
     // @State private var progressStatusResult: String = ""
@@ -46,7 +47,11 @@ struct ContentView: View {
             // Proceed with the write operation
             diskWriterService.driveInfo = selectedDrive
             diskWriterService.imageFilePath = imagePath
-            diskWriterService.writeDisk()
+            diskWriterService.writeDisk(progressHandler: { progressPercentage in
+                DispatchQueue.main.async {
+                    self.progressPercentage = progressPercentage
+                }
+            })
         }
     }
 
@@ -195,7 +200,7 @@ struct ContentView: View {
 
             // Process bar with status text
             HStack(spacing: 10) {
-                ProgressView(value: 0.0, total: 1.0)
+                ProgressView(value: progressPercentage, total: 1.0)
                     .progressViewStyle(LinearProgressViewStyle(tint: .primary))
                 Spacer()
                 Text("Ready")

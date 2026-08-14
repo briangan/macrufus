@@ -1,20 +1,35 @@
+import Foundation
 import Subprocess
 
 func logURL() -> URL {
-  let logFileName = "subprocess_log.txt"
+  let logFileName = "subprocess.log"
   let fileManager = FileManager.default
-  let documentsDirectory = try! fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-  let logURL = documentsDirectory.appendingPathComponent(logFileName)
+  let dir = URL(fileURLWithPath: fileManager.currentDirectoryPath + "/log", isDirectory: true)
+  // try! fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+  let logURL = dir.appendingPathComponent(logFileName)
   return logURL
 }
 
 // https://github.com/swiftlang/swift-subprocess
+// https://swiftpackageindex.com/swiftlang/swift-subprocess#readme
 func runSubprocess(cmd : String, args : Arguments, outputHandler: ((String) -> Void)?, errorHandler: ((String) -> Void)?) async throws {
   // Let's make a local log file to capture the output of the subprocess for debugging purposes.
 
-  outputHandler?("Running subprocess: \(cmd) \(args)")
-  
-  let result = try await run(
+  writeToLogFile(message: "Running subprocess: \(cmd) \(args)", at: logURL())
+
+  if outputHandler == nil && errorHandler == nil {
+    writeToLogFile(message: "No output or error handlers provided. Output will be printed to the console.", at: logURL())
+    let _ = try await run(
+        .name(cmd),
+        arguments: args,
+        input: .none,
+        output: .currentStandardOutput, 
+        error: .currentStandardError
+    )
+  }
+  else {
+    writeToLogFile(message: "Output and/or error handlers provided. Output will be captured by handlers.", at: logURL())
+    let _ = try await run(
         .name(cmd),
         arguments: args,
         input: .none,
@@ -22,20 +37,40 @@ func runSubprocess(cmd : String, args : Arguments, outputHandler: ((String) -> V
         error: .sequence
     ) { execution in
         try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
-                for try await line in execution.standardOutput.strings(bufferingPolicy: .maxLineLength(256) ) {
-                    outputHandler?(line)
+                group.addTask {
+                    for try await line in execution.standardOutput.strings(bufferingPolicy: .maxLineLength(5 * 1024) ) {
+                        // writeToLogFile(message: "| \(line) | hasSuffix: \(line.hasSuffix("\r"))", at: logURL())
+                        outputHandler?(line)
+                    }
+                    /* var outputIterator = execution.standardOutput.makeAsyncIterator()
+                    while let buffer = try await outputIterator.next() {
+                        // Convert Buffer to String using UTF-8 encoding
+                        guard let lineString = String(data: Data(buffer: buffer), encoding: .utf8) else { continue }
+
+                        var processedLine = lineString
+
+                        // writeToLogFile(message: "| \(processedLine) | hasSuffix: \(processedLine.hasSuffix("\r"))", at: logURL())
+                        // Check if the line ends with a carriage return, indicating a progress update
+                        if processedLine.hasSuffix("\r") {
+                            // Remove the carriage return for logging and handling
+                            processedLine.removeLast()
+                            writeToLogFile(message: "Progress update: \(processedLine)", at: logURL())
+                        } else {
+                            writeToLogFile(message: "Output: \(processedLine)", at: logURL())
+                        }
+                    } */
                 }
-            }
-            group.addTask {
-                for try await line in execution.standardError.strings(bufferingPolicy: .maxLineLength(256) ) {
-                    errorHandler?(line)
+                group.addTask {
+                    for try await line in execution.standardError.strings() {
+                        errorHandler?(line)
+                    }
                 }
-            }
-            try await group.waitForAll()
-        }
+                try await group.waitForAll()
+            } // withThrowingTaskGroup
+        } // run
     }
 }
+
 
 // MARK: - Calling async functions from sync contexts
 /*
@@ -56,7 +91,6 @@ func someSyncFunction() {
 }
 */
 
-import Foundation
 
 /**
  * Appends a given message string to a log file at the specified URL.

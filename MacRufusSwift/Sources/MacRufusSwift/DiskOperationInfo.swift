@@ -6,6 +6,10 @@ class DiskOperationProgress: ObservableObject {
   @Published var timeElapsed: Double = 0.0
   @Published var transferRate: Int64 = 0
 
+  func stats() -> String {
+    return "Transferred: \(bytesTransferred) bytes, Estimated: \(bytesEstimatedToTransfer) bytes, Time Elapsed: \(timeElapsed) seconds, Transfer Rate: \(transferRate) kB/s"
+  }
+
   func humanizedTransferRate() -> String {
     let rateInKB = Double(transferRate) / 1024.0
     if rateInKB < 1024 {
