@@ -3,4 +3,5 @@
 /electron-app
 /rufus/*
 /MacRufusSwift/.build
+/MacRufusSwift/log
 /MacRufusSwift/mac_system_profiler.json

@@ -25,6 +25,27 @@ There's also consideration of using Electron framework to enforce cross-OS compa
   * The most basic front end components of the form is done: output drive, input image, format options, progress bar, submit button and popup alert.
   * Next is the actual backend: which commands and how options on front end would match with the commands' options.
 
+## Swift Language and Mac OS Libraries
+
+### Syntax 
+
+* I haven't officialy gone into learning Swift syntax.
+* Swift's syntax is quite unique.  The casing of data type, functions, classes and file names are based on camel style.
+* The syntax style of classes and functions is similar to other languages like Java.
+* While for years have be spoiled by interpreted languages like Ruby and Python, this is back to restrictive, precise specification of data types, which is painful.  The compiler no way would let you make a statement without proper conversion to the correct data type matching the other side.  Luckily the autocomplete feature of Swift in the IDE has been helpful to suggestion of correct data type specifications matching the variables and the library's actual function definitions.  The IDE can underline suspected wrong data type before build.
+* The definition of functions is where it gets the most messy.  Because of the camel style squishing words into one, any long name cannot be quickly readable into mind.  Every argument of the function needs data type specified along, and as well as return type.  But arguments can be optional like in a hash of keys and values and values can be given default values.  All together makes a long function definition so crowded.
+* The block syntax is the most confusing.  The block's internal variable can end up right after braces in weird way like "addToTotal(){ current_balace in }"
+* Another confusing initially but good feature is use of class type's internal methods without putting in lambda or block: "match(options: [.caseIntensitive])"
+* Either the AI or autocompletion suggestion would strictively enforce reassignment of immutable variable: "f(s : String); let s2 = s".
+
+### Libraries
+
+* Of course without knowing the Swift and Mac OS libraries, I really rely on outer guides and AI to point to what libraries have what.
+* The most dirtiest part of Swift is its intermediate maturity: there are some data types that based on old versions like "NSxxx" while latest Swift versions have cleaner alternatives.
+* The most painful library is regular expression.  It's crazy that it cannot fully support simplest definition like "match = /([a-z]+) has \d+/ =~ text; name = $1"; somehow the compiler needs you to set like "Regex(#"\d"#)".  The match result type is set with match class instance in old Swift.  Basically search online would pile onto you a few different styles.
+* After importing Subprocess, eventually I figured out how to add external dependencies into package.
+
+
 ## Local API Performance
 
 Last Updated: 2026-08-10
