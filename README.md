@@ -13,7 +13,7 @@ There's also consideration of using Electron framework to enforce cross-OS compa
   * After last week's UI work, this week has been tougher because of backend obstacles when working on this part-time.
   * The main obstacle is running the image writing in background internally while still able to capture its continuous progress stats for conversion into UI's progress bar and stats.
   * AI responses to prompts for the above are just either incomplete or unstable.  Rather, I have to search online for postings and answers to this topic.
-  * After a few trials, at least I found the convenient stable Swift library Subprocess to run command with clean code and enough call backs for execution status change and output pipes.
+  * After a few trials, at least I found the convenient stable Swift library [Subprocess](https://swiftpackageindex.com/swiftlang/swift-subprocess#readme) to run command with clean code and enough call backs for execution status change and output pipes.
   * But because DD or my simulated script re-renders the same line for stat updates, output streaming just does not recognize new lines, which is the trigger for realizing new content and proceeding to capture that.  Need some workaround.
 
 * __2026-08-07__: 
@@ -43,7 +43,7 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 * Of course without knowing the Swift and Mac OS libraries, I really rely on outer guides and AI to point to what libraries have what.
 * The most dirtiest part of Swift is its intermediate maturity: there are some data types that based on old versions like "NSxxx" while latest Swift versions have cleaner alternatives.
 * The most painful library is regular expression.  It's crazy that it cannot fully support simplest definition like "match = /([a-z]+) has \d+/ =~ text; name = $1"; somehow the compiler needs you to set like "Regex(#"\d"#)".  The match result type is set with match class instance in old Swift.  Basically search online would pile onto you a few different styles.
-* After importing Subprocess, eventually I figured out how to add external dependencies into package.
+* After importing [Subprocess](https://github.com/swiftlang/swift-subprocess), eventually I figured out how to add external dependencies into package.
 
 
 ## Local API Performance

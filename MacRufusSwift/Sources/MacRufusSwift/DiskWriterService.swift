@@ -115,7 +115,7 @@ final class DiskWriterService: ObservableObject {
         do {
             try await runSubprocess(cmd: "python", args: ["../dd_test.py"], outputHandler: { line in
                 if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
-                    writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())
+                    // writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())
                     
                     progressHandler(progressUpdate)
                 }
@@ -138,7 +138,7 @@ final class DiskWriterService: ObservableObject {
       return DiskOperationProgress()
     }
     
-    let matches = regexMatch(pattern: pattern, in: statusLine)
+    let matches = statusLine.matches(pattern: pattern)
     // writeToLogFile(message: "| Regex matches for status line '\(statusLine)': \(matches)", at: logURL())
         
     let progress = DiskOperationProgress()
@@ -146,42 +146,5 @@ final class DiskWriterService: ObservableObject {
     progress.timeElapsed = if matches.count > 2, let timeElapsed = Double(matches[2]) { timeElapsed } else { 0 }
     progress.transferRate = if matches.count > 4, let transferRate = Int64(matches[4]) { transferRate } else { 0 }
     return progress
-  }
-  /*
-  func testRegexMatch(regex) {
-    let s = "109051904 bytes (109 MB, 104 MiB) transferred 19.011s, 5736 k"
-    let regex = try? NSRegularExpression(
-      pattern: #"(\d+) bytes.*transferred\s+(\d+(\.\d+)?)s,\s*([\d\.]+)\s*k"#,
-      options: .caseInsensitive
-    )
-
-    // https://medium.com/@ck3g/how-to-capture-regex-group-values-in-swift-8bf14b8db6a7
-    let title = "Season 1 Episode 3 - When Joey meets Zoey"
-    let pattern = "^Season\\s+(\\d+)\\s+Episode\\s+(\\d+)"
-    let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-    let match = regex?.firstMatch(in: title, options: [], range: NSRange(location: 0, length: title.utf16.count)) 
-    if let match = match {
-      if let wholeRange = Range(match.range(at: 2), in: title) {
-        let wholeMatch = title[wholeRange]
-        print("Whole match: \(wholeMatch)")
-      }
-    }
-  }
-  */
-
-  func regexMatch(pattern: String, in text: String, options: NSRegularExpression.Options = []) -> [String] { 
-    let regex = try!NSRegularExpression(pattern: pattern, options: options)
-    let nsrange = NSRange(text.startIndex..<text.endIndex, in: text)
-    var results : [String] = []
-    if let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)) 
-    {
-      for i in 0..<match.numberOfRanges {
-        if let range = Range(match.range(at: i), in: text) {
-          let matchedString = String(text[range])
-          results.append(matchedString)
-        }
-      }
-    }
-    return results
   }
 }
