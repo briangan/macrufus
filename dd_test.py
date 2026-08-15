@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # Transfer speed in bytes per second (Bps). Example: 100 MB/s * 8 bits/byte
     TRANSFER_SPEED_BPS = 800000  # 800 Bps (800 bytes per second)
 
-    TOTAL_SIZE_BYTES = TRANSFER_SPEED_BPS * 60
+    TOTAL_SIZE_BYTES = TRANSFER_SPEED_BPS * 180
 
     print(f"--- Disk Transfer Simulation ---")
     print(f"Total size to transfer: {TOTAL_SIZE_BYTES} bytes")

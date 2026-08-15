@@ -54,6 +54,7 @@ extension NSRegularExpression
   /// Instance Methods
   /*
   Instead of require the caller to create Range instance, this function will create for you.  If no match is found, it will return an empty array.
+  Different than matches because this returns the first match only, not all matches.  Internally, it will call matchesOfRegex(regex:in:options:) to do the actual work.
   Arguments:
     text: The input text to search for matches.
     options: Optional NSRegularExpression.Options to customize the regex behavior (default is empty).  
@@ -61,7 +62,7 @@ extension NSRegularExpression
   @returns: An array of strings that correspond to the whole matching string (index 0) 
     and any capture groups (index 1 and onwards) for the given pattern in the provided text.
   */
-  func matches(in text: String, options: NSRegularExpression.Options = []) -> [String] {
+  func fetchMatches(in text: String, options: NSRegularExpression.Options = []) -> [String] {
     return NSRegularExpression.matchesOfRegex(regex: self, in: text, options: options)
   }
 

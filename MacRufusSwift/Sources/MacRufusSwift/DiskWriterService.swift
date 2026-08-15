@@ -88,7 +88,7 @@ final class DiskWriterService: ObservableObject {
         return false
     }
     print("Image file size: \(fileSize) bytes.")
-    self.progress.bytesEstimatedToTransfer = 48000000 // TODO: Restore to fileSize
+    self.progress.bytesEstimatedToTransfer = 144000000 // TODO: Restore to fileSize
 
     // Simply non-async run
     self.isWriting = true
@@ -138,7 +138,7 @@ final class DiskWriterService: ObservableObject {
       return DiskOperationProgress()
     }
     
-    let matches = statusLine.matches(pattern: pattern)
+    let matches = regex.fetchMatches(in: statusLine)
     // writeToLogFile(message: "| Regex matches for status line '\(statusLine)': \(matches)", at: logURL())
         
     let progress = DiskOperationProgress()
