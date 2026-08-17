@@ -91,6 +91,13 @@ system_profiler SPNVMeDataType -json
 
 The samples of output are logged within MacRufusSwift: mac_system_profiler_SPNVMeDataType.json and mac_system_profiler_SPUSBHostDataType.json
 
+
+## Installation
+
+A version of [built .app](tree/main/MacRufusSwift/MacRufus.app/Contents) is pushed.  And its size is still under 3 MB because it literally calls native tools and uses Swift library.
+
+For functional disk writing operations, the [**Full Disk Access** security setting](mac_privacy_full_disk_access.png) for MacRufus / MacRufusSwift needs to be enabled.
+
 =============================================
 
 # TODOs
@@ -100,6 +107,7 @@ The samples of output are logged within MacRufusSwift: mac_system_profiler_SPNVM
 * Partition Options: partition scheme, target system
 * Format Options section: file system, cluster size
 * Status section: progress bar, status text
+* Authorization to execute dd: request to be authorized on the list of "Allow the applications below to access data like Mail, Messages, Safari, and certain administrative settings for all users on this Mac
 * Write image to drive using dd, and update progress bar
 * Partitioning process using diskutil
 
