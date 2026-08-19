@@ -40,7 +40,7 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 
 ### Libraries
 
-* Of course without knowing the Swift and Mac OS libraries, I really rely on outer guides and AI to point to what libraries have what.
+* Of course without knowing the Swift and Mac OS libraries, I really rely on external guides on the web and AI to explain what libraries have what.
 * The most dirtiest part of Swift is its intermediate maturity: there are some data types that based on old versions like "NSxxx" while latest Swift versions have cleaner alternatives.
 * The most painful library is regular expression.  It's crazy that it cannot fully support simplest definition like "match = /([a-z]+) has \d+/ =~ text; name = $1"; somehow the compiler needs you to set like "Regex(#"\d"#)".  The match result type is set with match class instance in old Swift.  Basically search online would pile onto you a few different styles.
 * After importing [Subprocess](https://github.com/swiftlang/swift-subprocess), eventually I figured out how to add external dependencies into package.
@@ -48,7 +48,7 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 
 ## Local API Performance
 
-Last Updated: 2026-08-10
+Last Updated: 2026-08-13
 
 Since my paid CoPilot premium usage for August was already eaten by early prompts to summarize Rufus written in C++ and generate similar one in Swift for Mac OS, I have to reconsidering paying these AI services for big operations.  So the other option is to try running open-source AI models locally.  I did installation of Ollama and selected models on my own Macbook Pro: Ollama, its own llama3.1:8b, qwen2.5-coder-7b, gemma4:2b, gemma4:4b, and nomic-embed-text.  I'm tied up with these smaller local models because to be developing and running local AI pretty much use up most of my MBP's memory.  I'm preparing my PC with mid-level video card to run AI better, so beginning of setup has been painful: replace privacy-stealing Windows 11 with fresh installation of Windows 10, a more trust-worthy OS that still works with most software.  Linux is installed on the other drive, but the latter is slower SSD and setup on Linux would take more time for another project.  Overall, it's cumbersome to use a large PC, especially now electricity rates and hardware prices are continuously being raised.
 
@@ -56,12 +56,14 @@ Since my paid CoPilot premium usage for August was already eaten by early prompt
 * __gemma4:2b__ - Actually pretty good in analyzing the context of codes, and suggesting solutions.  After typing the class or function synopsis and functionalities, its autocomplete and correction suggestions have been helpful.  For example, once one variable has data type changed, it can auto-correct the other spots of data type for change.  However, its code block generation is sometimes confusing with wrong syntax, and for newbie like me who does not know much about Swift system would be little painful.
 * __gemma4:4b__ - This model requires more than 10GB of memory, so would push the MBP to use swap and heats up the laptop quickly because of intensive GPU usage.  So have not used it much.  One time when a tricky Swift build error could not be resolved by other models, I intentionally switched to this, and it solved it.  I guess this is good choice for little more complexity.  Will try running in PC.
 * __qwen2.5-coder-7b__ - Originally by its name, expected coder to be at least capable of helping out on coding.  But the prompts within some context cannot be correct all the time.  Any big task like code generation of a function would be given inaccurate or incomplete suggestions.  Simpler corrections and documentation queries are still good enough.
-* __rafw007/qwen35-claude-coder:9b__ - Since qwen2.5-coder-7b often provides incomplete explanations for humans, I tried to upgrade a version to Qwen3.5.  No official smaller quantitized version other than open-source poster on Unsloth/Huggingface.  Had one try with this one from rafw007: provided code suggestion but no wordy explanation.
+* __rafw007/qwen35-claude-coder:9b__ - Since qwen2.5-coder-7b often provides incomplete explanations for humans, I tried to upgrade a version to Qwen3.5.  No official smaller quantitized version other than open-source post on Unsloth/Huggingface pages.  Had one try with this one from rafw007: provided code suggestion but no wordy explanation.
 
+  
+----------------------------------------------
 
-==========================================
 
 # Methods to Collect Device Information
+
 
 ## Mac OS Device Information
 
@@ -70,7 +72,16 @@ Since my paid CoPilot premium usage for August was already eaten by early prompt
 diskutil list External
 ```
 
-A sample of the output is logged in MacRufusSwift/mac_diskutil_list_External.log
+Add extra argument -plist to render output as XML.
+
+A sample of the output is logged in [MacRufusSwift/mac_diskutil_list_external.log](MacRufusSwift/mac_diskutil_list_external.log)
+
+### Specifically find thorough details of one device
+```
+diskutil info -plist disk2
+```
+
+A sample of the output is logged in [MacRufusSwift/mac_diskutil_disk_info.xml](MacRufusSwift/mac_diskutil_disk_info.xml)
 
 
 ### More detail of mounted storage drives using system_profile command
@@ -98,9 +109,13 @@ A version of [built .app](tree/main/MacRufusSwift/MacRufus.app/Contents) is push
 
 For functional disk writing operations, the [**Full Disk Access** security setting](mac_privacy_full_disk_access.png) for MacRufus / MacRufusSwift needs to be enabled.
 
-=============================================
 
-# TODOs
+-------------------------------------------
+
+# Future Status of Application
+
+
+## TODOs
 
 * Device name is missing in using `diskutil` to collect device info.
 * Might have to try using `system_profiler` to collect
@@ -111,6 +126,6 @@ For functional disk writing operations, the [**Full Disk Access** security setti
 * Write image to drive using dd, and update progress bar
 * Partitioning process using diskutil
 
-# Difficult Rufus Features
+## Difficult Rufus Features
 
 * Upon recognition of the image is a Windows 11 installation, Rufus has extra options to help user to skip out or turn off Windows' privacy or bloat content at initial installation.  Certainly these need more knowledge of tricks to counter Microsoft's doings, and reviewing over Rufus' C++ codes would not be easy.

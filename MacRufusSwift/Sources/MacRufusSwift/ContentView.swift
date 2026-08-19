@@ -11,8 +11,7 @@ struct ContentView: View {
     @State private var selectedImageURL: URL? = nil
     @State private var hasEnoughToClickWrite: Bool = false
     @State private var progressRatio: Double = 0.0 // 0.0 to 1.0, not percentage
-
-    // @State private var progressStatusText: String = ""
+    @State private var progressStatusText: String = "Ready"
     // @State private var progressStatusResult: String = ""
 
     /// Keep selectedDriveID in sync whenever the drive list changes.
@@ -85,7 +84,7 @@ struct ContentView: View {
                     ForEach(service.drives) { drive in
                         HStack {
                             Image(systemName: drive.protocolIcon)
-                            Text("\(drive.name)  ·  \(drive.id)  ·  \(drive.size)").font(.system(size: 15))
+                            Text("\(drive.deviceName)  ·  \(drive.id)  ·  \(drive.size)").font(.system(size: 15))
                         }
                         .tag(Optional(drive.id))
                     }
@@ -203,7 +202,7 @@ struct ContentView: View {
                 ProgressView(value: progressRatio, total: 1.0)
                     .progressViewStyle(LinearProgressViewStyle(tint: .primary))
                 Spacer()
-                Text("Ready")
+                Text(progressStatusText)
                     .font(.system(size: 12))
                     .foregroundColor(.overlay0)
             }
@@ -218,11 +217,19 @@ struct ContentView: View {
                 Button(action: {
                     self.disabled(!hasEnoughToClickWrite)
                     if hasEnoughToClickWrite {
-                        clickToWrite()
+                        print("hasFullDiskAccess: \(hasFullDiskAccess())")
+                        print("hasAccessToRunDD: \(hasAccessToRunDD())")
+                        print("hasSudoAccess: \(hasSudoAccess())")
+                        if !hasFullDiskAccess() {
+                            requestFullDiskAccess()
+                        } else {
+                            clickToWrite()
+                        }
                     }
                 }) {
                     Label(diskWriterService.isWriting ? "Writing…" : "Write", systemImage: "externaldrive.fill.badge.plus")
                         .font(.system(size: 15, weight: .semibold))
+                        .opacity(hasEnoughToClickWrite ? 1.0 : 0.5)
                 }
                 .buttonStyle(PillButtonStyle(isSecondary: true))
                 .disabled(!hasEnoughToClickWrite || diskWriterService.isWriting)
@@ -235,6 +242,8 @@ struct ContentView: View {
         .background(Color.base.ignoresSafeArea())
         .onAppear { 
             service.refresh()
+            print("hasFullDiskAccess: \(hasFullDiskAccess())")
+            print("hasAccessToRunDD: \(hasAccessToRunDD())")
         }
         .onChange(of: service.drives) { _ in syncSelection() }
     }
@@ -323,6 +332,64 @@ struct ContentView: View {
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         alert.runModal()
+    }
+
+    func hasSudoAccess() -> Bool {
+        let task = Process()
+        task.launchPath = "/usr/bin/sudo"
+        task.arguments = ["-n", "true"] // Non-interactive check
+        task.standardOutput = Pipe()
+        task.standardError = Pipe()
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+            return task.terminationStatus == 0
+        } catch {
+            print("Error checking system authorization: \(error)")
+            return false
+        }
+    }
+
+    func hasAccessToRunDD() -> Bool {
+        let task = Process()
+        task.launchPath = "/bin/dd"
+        task.arguments = ["--version"]
+        task.standardOutput = Pipe()
+        task.standardError = Pipe()
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+            return task.terminationStatus == 0
+        } catch {
+            print("Error checking access to run dd: \(error)")
+            return false
+        }
+    }
+
+    // Check if this application has Full Disk Access permission
+    func hasFullDiskAccess() -> Bool {
+        let testPath = "/System/Library/CoreServices/SystemUIServer.app"
+        let fileManager = FileManager.default
+        return fileManager.isReadableFile(atPath: testPath)
+    }
+
+    func requestFullDiskAccess() {
+        let alert = NSAlert()
+        alert.messageText = "Full Disk Access Required"
+        alert.informativeText = "This application requires Full Disk Access to write to external drives. Please grant permission in System Preferences."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open System Preferences")
+        alert.addButton(withTitle: "Cancel")
+
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            // Open the Security & Privacy preferences pane
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 } // ContentView
 

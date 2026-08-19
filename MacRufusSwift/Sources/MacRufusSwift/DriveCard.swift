@@ -16,7 +16,7 @@ struct DriveCardView: View {
                 .foregroundColor(.primary)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(drive.name)
+                Text(drive.deviceName)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.text)
 
@@ -24,7 +24,7 @@ struct DriveCardView: View {
                     Text("Name:")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.subtext1)
-                    Text(drive.name)
+                    Text(drive.deviceName)
                         .font(.system(size: 12))
                         .foregroundColor(.overlay0)
                 }

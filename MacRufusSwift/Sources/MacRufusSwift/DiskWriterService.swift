@@ -28,7 +28,7 @@ final class DiskWriterService: ObservableObject {
     }
     TODO: RESTORE */
 
-    print("Drive \(drive.name) is removable and has id \(drive.id).")
+    print("Drive \(drive.deviceName) is removable and has id \(drive.id).")
 
     // Check if imageFilePath is not nil 
     let p : String? = imageFilePath
@@ -53,7 +53,7 @@ final class DiskWriterService: ObservableObject {
     }
     
     // Additional checks can be added here (e.g., check for sufficient space)
-    print("Drive and image file checks passed for drive \(drive.name) and image file \(imageFilePath).")
+    print("Drive and image file checks passed for drive \(drive.deviceName) and image file \(imageFilePath).")
     
     return "" // Everything is okay
   }
@@ -92,13 +92,17 @@ final class DiskWriterService: ObservableObject {
 
     // Simply non-async run
     self.isWriting = true
-    self.runPythonDDTest(progressHandler: { progressUpdate in
-        self.progress.bytesTransferred = progressUpdate.bytesTransferred
-        self.progress.timeElapsed = progressUpdate.timeElapsed
-        self.progress.transferRate = progressUpdate.transferRate
-        progressHandler(self.progress.progressPercentage())
-        print("Progress: \(self.progress.bytesTransferred) bytes transferred, \(self.progress.timeElapsed) seconds elapsed, \(self.progress.transferRate) kB/s => \(self.progress.progressPercentage())% complete")
-      })
+
+    let isTesting = false
+    if isTesting {
+      self.runPythonDDTest(progressHandler: { progressUpdate in
+          self.updateProgress(with: progressUpdate, progressHandler: progressHandler)
+        })
+    } else {
+      self.runDDWriteImage(progressHandler: { progressUpdate in
+          self.updateProgress(with: progressUpdate, progressHandler: progressHandler)
+        })
+    }
     self.isWriting = false
 
     return true
@@ -129,10 +133,41 @@ final class DiskWriterService: ObservableObject {
     }
   }
 
+  func runDDWriteImage(progressHandler: @escaping (DiskOperationProgress) -> Void) {
+    guard let driveId: String = driveInfo?.id, let imagePath = imageFilePath else {
+        print("Drive info or image file path is nil.")
+        return
+    }
+    let blockSize = "1M" // Example block size
+    print("Running dd to write image \(imagePath) to drive /dev/\(driveId) with block size \(blockSize)...")
+
+    Task { @MainActor in
+        do {
+            try await runSubprocess(cmd: "dd", args: ["if=\(imagePath)", "of=/dev/\(driveId)", "bs=\(blockSize)", "status=progress"], 
+              outputHandler: { line in
+                if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
+                    writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())
+                    
+                    progressHandler(progressUpdate)
+                }
+            }, errorHandler: { line in
+                print("Error from dd command: \(line)")
+                
+            })
+            print("dd command completed successfully.")
+        } catch {
+            print("Error running subprocess: \(error)")
+        }
+    }
+  } 
+
+  //===================================
+  // Private Methods
+
 
   // This function is called when dd outputs a progress status line. It parses the line and updates the progress bar or other UI elements accordingly.
   // 109051904 bytes (109 MB, 104 MiB) transferred 19.011s, 5736 k
-  func parseDDProgressStatus(_ statusLine: String) -> DiskOperationProgress? {
+  private func parseDDProgressStatus(_ statusLine: String) -> DiskOperationProgress? {
     let pattern: String = #"(\d+) bytes.*transferred\s+(\d+(\.\d+)?)s,\s*([\d\.]+)\s*k"#
     guard let regex: NSRegularExpression = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
       return DiskOperationProgress()
@@ -146,5 +181,13 @@ final class DiskWriterService: ObservableObject {
     progress.timeElapsed = if matches.count > 2, let timeElapsed = Double(matches[2]) { timeElapsed } else { 0 }
     progress.transferRate = if matches.count > 4, let transferRate = Int64(matches[4]) { transferRate } else { 0 }
     return progress
+  }
+
+  private func updateProgress(with progressUpdate: DiskOperationProgress, progressHandler: @escaping (Double) -> Void) {
+    self.progress.bytesTransferred = progressUpdate.bytesTransferred
+    self.progress.timeElapsed = progressUpdate.timeElapsed
+    self.progress.transferRate = progressUpdate.transferRate
+    progressHandler(self.progress.progressPercentage())
+    print("Progress: \(self.progress.bytesTransferred) bytes transferred, \(self.progress.timeElapsed) seconds elapsed, \(self.progress.transferRate) kB/s => \(self.progress.progressPercentage())% complete")
   }
 }

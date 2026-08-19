@@ -3,13 +3,15 @@ import Foundation
 // MARK: - Model
 
 struct DriveInfo: Identifiable, Equatable {
-    var id: String = "" // e.g. "disk2"
-    var name: String
+    var id: String = "" // e.g. "/dev/disk2" or "disk2s1"
     var deviceName: String  // e.g. "WD_BLACK SN850X 4000GB" from system_profiler
     var size: String
-    var mountPoint: String
+    var mountPoint: String // e.g. "/Volumes/MyDrive" or "Not mounted"
+    var partitions: [PartitionInfo] = []
+    var partitionScheme: String? = nil
     var busProtocol: String
     var isRemovable: Bool
+    var isVirtual: Bool = false // Based on value of <key>VirtualOrPhysical</key><string>Physical</string> from diskutil info -plist disk2
 
     var protocolIcon: String {
         let p = busProtocol.lowercased()
@@ -56,6 +58,8 @@ final class DiskUtilService: ObservableObject {
 
     // MARK: - Private helpers
 
+    /* Running diskutil commands
+    */
     private static func run(_ args: [String]) async throws -> Data {
         try await withCheckedThrowingContinuation { cont in
             let proc = Process()
@@ -126,59 +130,195 @@ final class DiskUtilService: ObservableObject {
         let listData = try await run(["list", "-plist", "external"])
         guard let plist = try PropertyListSerialization
                 .propertyList(from: listData, format: nil) as? [String: Any],
-              let allDisks = plist["AllDisks"] as? [String]
+              let allDisksAndPartitions = plist["AllDisksAndPartitions"] as? [[String: Any]]
         else { return [] }
 
-        // Only top-level physical disk identifiers: "disk4", "disk5", etc.
-        // Exclude partitions like "disk4s1", "disk4s2"
-        let topLevel = allDisks.filter { $0.range(of: #"^disk\d+$"#, options: .regularExpression) != nil }
+        let devicePartitions : [String : [PartitionInfo]] = parseDevicePartitions(from: allDisksAndPartitions)
 
         // Step 2: fetch device names from system_profiler in parallel with disk info
         async let deviceNamesTask = deviceNamesByDisk()
 
+        // TODO: Remove debug print
+        for (diskId, partitions) in devicePartitions {
+            print("Disk \(diskId) has \(partitions.count) partitions: \(partitions.map { $0.id })")
+        }
+
         // Step 3: get info for each disk in parallel
         let deviceNames = await deviceNamesTask
         return try await withThrowingTaskGroup(of: DriveInfo?.self) { group in
-            for disk in topLevel {
-                group.addTask { try await Self.driveInfo(for: disk, deviceName: deviceNames[disk]) }
-            }
             var result: [DriveInfo] = []
+            for (diskId, partitions) in devicePartitions {
+
+                group.addTask {
+                    let deviceName = deviceNames[diskId]
+                    return try await fetchDriveInfo(for: diskId)
+                }
+            }
             for try await info in group {
-                if let info { result.append(info) }
+                if var info = info {
+                    if info.isVirtual { continue } // Skip virtual disks
+                    info.partitions = devicePartitions[info.id] ?? []
+                    result.append(info) 
+                }
             }
             return result.sorted { $0.id < $1.id }
         }
     }
 
-    private static func driveInfo(for disk: String, deviceName: String? = nil) async throws -> DriveInfo? {
+    private static func fetchDriveInfo(for disk: String) async throws -> DriveInfo? {
         let data = try await run(["info", "-plist", disk])
         guard let plist = try PropertyListSerialization
                 .propertyList(from: data, format: nil) as? [String: Any]
         else { return nil }
 
-        let name       = (plist["VolumeName"] as? String)
-                      ?? (plist["MediaName"]  as? String)
-                      ?? disk
-        let totalBytes = plist["TotalSize"] as? Int ?? 0
-        let mountPoint = (plist["MountPoint"] as? String) ?? ""
-        let busProto   = (plist["BusProtocol"] as? String) ?? "Unknown"
-        let removable  = plist["RemovableMedia"] as? Bool ?? false
-
-        // Skip synthesized/virtual disks (APFS containers) and disk images
-        let virtualOrPhysical = plist["VirtualOrPhysical"] as? String ?? ""
-        let deviceProtocol    = plist["DeviceProtocol"]    as? String ?? ""
-        guard virtualOrPhysical != "Virtual",
-              deviceProtocol != "Disk Image"
-        else { return nil }
+        let deviceId = plist["DeviceIdentifier"] as? String ?? ""
+        let deviceName = plist["MediaName"] as? String ?? deviceId
+        let totalBytes = plist["Size"] as? Int ?? 0
+        let mountPoint = plist["MountPoint"] as? String ?? ""
+        let busProto = plist["BusProtocol"] as? String ?? "Unknown"
+        let removable = plist["RemovableMedia"] as? Bool ?? false
+        let isVirtual = (plist["VirtualOrPhysical"] as? String ?? "Physical") == "Virtual"
 
         return DriveInfo(
             id: disk,
-            name: name,
-            deviceName: deviceName ?? name,
+            deviceName: deviceName,
             size: formatBytes(totalBytes),
             mountPoint: mountPoint.isEmpty ? "Not mounted" : mountPoint,
             busProtocol: busProto,
-            isRemovable: removable
+            isRemovable: removable,
+            isVirtual: isVirtual
+        )
+    }
+
+    // Function to parse the drives and partitions of the value of top-level AllDisksAndPartitions from the mac_diskutil_list_External.xml sample file
+    /*
+    Special case: the list of disks might have overlapping disks prepared by Mac diskutil, for example, in APFS schema,
+        there could be a "sythesized" disk that contains the partitions of a physical disk while the physical disk itself might also be listed.  
+        So need to exclude those.
+
+    ❯ diskutil list external                                        
+    /dev/disk4 (external, physical):
+    #:                       TYPE NAME                    SIZE       IDENTIFIER
+    0:      GUID_partition_scheme                        *4.0 TB     disk4
+    1:                        EFI EFI                     209.7 MB   disk4s1
+    2:                 Apple_APFS Container disk5         4.0 TB     disk4s2
+
+    /dev/disk5 (synthesized):
+    #:                       TYPE NAME                    SIZE       IDENTIFIER
+    0:      APFS Container Scheme -                      +4.0 TB     disk5
+                                    Physical Store disk4s2
+    1:                APFS Volume datahd                  2.9 TB     disk5s1
+
+    In XML plist:
+
+    <dict>
+        <key>Content</key>
+        <string>GUID_partition_scheme</string>
+        <key>DeviceIdentifier</key>
+        <string>disk6</string>
+        <key>OSInternal</key>
+        <false/>
+        <key>Partitions</key>
+        <array>
+            ...
+        </array>]
+    </dict>
+
+    <div>
+        <key>APFSPhysicalStores</key>
+        <array>
+            <dict>
+                <key>DeviceIdentifier</key>
+                <string>disk6s2</string>
+            </dict>
+        </array>
+        <key>Content</key>
+        <string>Apple_APFS_Container</string>
+        <key>DeviceIdentifier</key>
+        <string>disk7</string>
+        <key>OSInternal</key>
+        <false/>
+        <key>Partitions</key>
+        <array/>
+        <key>Size</key>
+        <integer>4000577273856</integer>
+    </dict>
+    */
+    private static func parseDevicePartitions(from allDisksAndPartitions: [[String: Any]]) -> [String : [PartitionInfo]] {
+        var deviceMap: [String : [PartitionInfo]] = [:]
+        for diskDict in allDisksAndPartitions {
+            guard let deviceId = diskDict["DeviceIdentifier"] as? String,
+                  let sizeBytes = diskDict["Size"] as? Int
+            else { continue }
+
+            let partitionArray = diskDict["Partitions"] as? [[String: Any]] ?? []
+            var partitions: [PartitionInfo] = []
+            for (index, partitionDict) in partitionArray.enumerated() {
+                var partitionInfo = parsePartitionsDictionary(partitionDict)
+                partitionInfo.orderOnDrive = index
+                partitions.append(partitionInfo)
+            }
+
+            deviceMap[deviceId] = partitions
+        }
+        return deviceMap
+    }
+
+    /*
+        Parses a single partition dictionary for a given partition, not the Array of partitions.
+        Expect the dictionary to be like:
+        <dict>
+            <key>Content</key>
+            <string>EFI</string>
+            <key>DeviceIdentifier</key>
+            <string>disk6s1</string>
+            <key>DiskUUID</key>
+            <string>A3787473-87D5-4D4F-BA08-54A835212BEA</string>
+            <key>Size</key>
+            <integer>209715200</integer>
+            <key>VolumeName</key>
+            <string>EFI</string>
+            <key>VolumeUUID</key>
+            <string>0E239BC6-F960-3107-89CF-1C97F78BB46B</string>
+        </dict>
+        <dict>
+            <key>CapacityInUse</key>
+            <integer>2935269965824</integer>
+            <key>DeviceIdentifier</key>
+            <string>disk7s1</string>
+            <key>DiskUUID</key>
+            <string>FBF89EA5-B8AB-422D-A480-5DE42582A76A</string>
+            <key>MountPoint</key>
+            <string>/Volumes/datahd</string>
+            <key>MountedSnapshots</key>
+            <array/>
+            <key>OSInternal</key>
+            <false/>
+            <key>Size</key>
+            <integer>4000577273856</integer>
+            <key>VolumeName</key>
+            <string>datahd</string>
+            <key>VolumeUUID</key>
+            <string>FBF89EA5-B8AB-422D-A480-5DE42582A76A</string>
+        </dict>
+        @return PartitionInfo without the orderOnDrive set (caller should set it based on the index in the array of partitions)
+    */
+    private static func parsePartitionsDictionary(_ dict: [String: Any] ) -> PartitionInfo {
+        let partitionId = dict["DeviceIdentifier"] as? String ?? ""
+        let capacity = dict["Size"] as? Int64 ?? 0
+        let capacityInUse = dict["CapacityInUse"] as? Int64 ?? 0
+        let mountPoint = dict["MountPoint"] as? String ?? ""
+        let format = dict["Content"] as? String ?? ""
+        let isBootable = format.lowercased() == "efi"
+
+        return PartitionInfo(
+            id: partitionId,
+            name: dict["VolumeName"] as? String ?? "",
+            capacity: capacity,
+            capacityInUse: capacityInUse,
+            mountPoint: mountPoint,
+            format: format,
+            isBootable: isBootable
         )
     }
 
