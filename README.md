@@ -5,7 +5,7 @@ The open-source Windows program [Rufus](https://rufus.ie/en/) is useful free too
 
 The framework used is Swift UI within MacRufusSwift subfolder.  Since I have only little knowledge of Swift and desktop app programming, I started using Claude Sonnet 4.6 initially to generate and fix up the basic structure of the app, and amazingly those prompts alone ate up one month's premium request capacity.  So for further modifications, testing and debugging would need assistance. 
 
-There's also consideration of using Electron framework to enforce cross-OS compatibility.  But the problem found so far really requires a pack of library and executives in large space size, compared to Mac-native version in small space size like less than 1 MB.  Maybe future AI conversion will help with head-start.
+There's also consideration of using Electron framework to enforce cross-OS compatibility.  But the problem found so far really requires a pack of library and executives in large space size, compared to Mac-native version in small space size like less than 1 MB.  In fact, just encountered another of the same app [Etcher](https://github.com/balena-io/etcher) which is written with TypeScript and installed with 400 MB size.  Maybe future AI conversion will help with head-start.
 
 ## Development So Far
 
@@ -101,6 +101,14 @@ system_profiler SPNVMeDataType -json
 ```
 
 The samples of output are logged within MacRufusSwift: mac_system_profiler_SPNVMeDataType.json and mac_system_profiler_SPUSBHostDataType.json
+
+
+### Final disk writing command
+
+After preparation of parameters, the final command would run like below.  Sudo privellege is required to manage disks, thus `sudo -S` is needed at front.  The ending parameter `status=progress` is the continuous text update of progress stats.
+```
+sudo -S dd if=/path_to/some_bootable_image.iso of=/dev/disk6s1 bs=1M status=progress
+```
 
 
 ## Installation

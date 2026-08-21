@@ -20,28 +20,28 @@ func runSubprocess(cmd : String, args : Arguments, outputHandler: ((String) -> V
   if outputHandler == nil && errorHandler == nil {
     writeToLogFile(message: "No output or error handlers provided. Output will be printed to the console.", at: logURL())
     let _ = try await run(
-        .name(cmd),
-        arguments: args,
-        input: .none,
-        output: .currentStandardOutput, 
-        error: .currentStandardError
+      .name(cmd),
+      arguments: args,
+      input: .none,
+      output: .currentStandardOutput, 
+      error: .currentStandardError
     )
   }
   else {
     writeToLogFile(message: "Output and/or error handlers provided. Output will be captured by handlers.", at: logURL())
     let _ = try await run(
-        .name(cmd),
-        arguments: args,
-        input: .none,
-        output: .sequence,
-        error: .sequence
+      .name(cmd),
+      arguments: args,
+      input: .none,
+      output: .sequence,
+      error: .sequence
     ) { execution in
-        try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    for try await line in execution.standardOutput.strings(bufferingPolicy: .maxLineLength(5 * 1024) ) {
-                        // writeToLogFile(message: "| \(line) | hasSuffix: \(line.hasSuffix("\r"))", at: logURL())
-                        outputHandler?(line)
-                    }
+      try await withThrowingTaskGroup(of: Void.self) { group in
+        group.addTask {
+          for try await line in execution.standardOutput.strings(bufferingPolicy: .maxLineLength(5 * 1024) ) {
+            // writeToLogFile(message: "| \(line) | hasSuffix: \(line.hasSuffix("\r"))", at: logURL())
+            outputHandler?(line)
+          }
                     /* var outputIterator = execution.standardOutput.makeAsyncIterator()
                     while let buffer = try await outputIterator.next() {
                         // Convert Buffer to String using UTF-8 encoding
@@ -59,16 +59,16 @@ func runSubprocess(cmd : String, args : Arguments, outputHandler: ((String) -> V
                             writeToLogFile(message: "Output: \(processedLine)", at: logURL())
                         }
                     } */
-                }
-                group.addTask {
-                    for try await line in execution.standardError.strings() {
-                        errorHandler?(line)
-                    }
-                }
-                try await group.waitForAll()
-            } // withThrowingTaskGroup
-        } // run
-    }
+        }
+        group.addTask {
+          for try await line in execution.standardError.strings() {
+            errorHandler?(line)
+          }
+        }
+        try await group.waitForAll()
+      } // withThrowingTaskGroup
+    } // run
+  }
 }
 
 
@@ -101,47 +101,47 @@ func someSyncFunction() {
  *   - logFileURL: The URL pointing to the log file.
  */
 func writeToLogFile(message: String, at logFileURL: URL) {
-    // 1. Prepare the content with a timestamp for better logging context
-    let timestamp = DateFormatter()
-    timestamp.dateFormat = "yyyy-MM-dd HH:mm:ss"
-    let formattedDate = timestamp.string(from: Date())
-    let logEntry = "[\(formattedDate)] \(message)\n"
+  // 1. Prepare the content with a timestamp for better logging context
+  let timestamp = DateFormatter()
+  timestamp.dateFormat = "yyyy-MM-dd HH:mm:ss"
+  let formattedDate = timestamp.string(from: Date())
+  let logEntry = "[\(formattedDate)] \(message)\n"
 
-    // 2. Get the file manager instance
-    let fileManager = FileManager.default
+  // 2. Get the file manager instance
+  let fileManager = FileManager.default
 
-    do {
-        // 3. Check if the file exists to determine if we need to append or create
-        var isFileExists = false
-        if fileManager.fileExists(atPath: logFileURL.path) {
-            isFileExists = true
-        }
-
-        // 4. Append the content to the file
-        // Using Data.append to ensure appending behavior across different OS/Swift versions
-        let dataToWrite = logEntry.data(using: .utf8)!
-
-        if isFileExists {
-            // If it exists, we need to append the data. This requires opening the file handle.
-            guard let fileHandle = try? FileHandle(forWritingTo: logFileURL) else {
-                print("Error: Could not open file handle for writing at \(logFileURL.path)")
-                return
-            }
-            defer {
-                // Ensure the file handle is closed when done
-                fileHandle.closeFile()
-            }
-            try fileHandle.seekToEnd() // Move to the end of the file
-            try fileHandle.write(contentsOf: dataToWrite)
-
-        } else {
-            // If it doesn't exist, we create it and write the content.
-            try dataToWrite.write(to: logFileURL, options: .atomic)
-        }
-
-    } catch let error as NSError {
-        print("Error writing to log file at \(logFileURL.path): \(error.localizedDescription)")
+  do {
+    // 3. Check if the file exists to determine if we need to append or create
+    var isFileExists = false
+    if fileManager.fileExists(atPath: logFileURL.path) {
+      isFileExists = true
     }
+
+    // 4. Append the content to the file
+    // Using Data.append to ensure appending behavior across different OS/Swift versions
+    let dataToWrite = logEntry.data(using: .utf8)!
+
+    if isFileExists {
+      // If it exists, we need to append the data. This requires opening the file handle.
+      guard let fileHandle = try? FileHandle(forWritingTo: logFileURL) else {
+        print("Error: Could not open file handle for writing at \(logFileURL.path)")
+        return
+      }
+      defer {
+        // Ensure the file handle is closed when done
+        fileHandle.closeFile()
+      }
+      try fileHandle.seekToEnd() // Move to the end of the file
+      try fileHandle.write(contentsOf: dataToWrite)
+
+    } else {
+      // If it doesn't exist, we create it and write the content.
+      try dataToWrite.write(to: logFileURL, options: .atomic)
+    }
+
+  } catch let error as NSError {
+    print("Error writing to log file at \(logFileURL.path): \(error.localizedDescription)")
+  }
 }
 
 // MARK: - Example Usage
