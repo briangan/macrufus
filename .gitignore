@@ -1,5 +1,4 @@
 .vscode
-/*.iso
 /electron-app
 /rufus/*
 /MacRufusSwift/.build

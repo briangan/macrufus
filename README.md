@@ -5,9 +5,13 @@ The open-source Windows program [Rufus](https://rufus.ie/en/) is useful free too
 
 The framework used is Swift UI within MacRufusSwift subfolder.  Since I have only little knowledge of Swift and desktop app programming, I started using Claude Sonnet 4.6 initially to generate and fix up the basic structure of the app, and amazingly those prompts alone ate up one month's premium request capacity.  So for further modifications, testing and debugging would need assistance. 
 
-There's also consideration of using Electron framework to enforce cross-OS compatibility.  But the problem found so far really requires a pack of library and executives in large space size, compared to Mac-native version in small space size like less than 1 MB.  In fact, just encountered another of the same app [Etcher](https://github.com/balena-io/etcher) which is written with TypeScript and installed with 400 MB size.  Maybe future AI conversion will help with head-start.
+There's also consideration of using Electron framework to enforce cross-OS compatibility.  But the problem found so far really requires a pack of library and executives in large space size, compared to Mac-native version in small space size like less than 1 MB.  In fact, just encountered another app with the same goals [Etcher](https://github.com/balena-io/etcher) which is written with TypeScript and installed with 400 MB size.  Maybe future AI conversion will help with head-start.
 
 ## Development So Far
+
+* __2026-09-11__: 
+  * A few weeks of break for kids until the kids start school.
+  * Added sample_image.iso as simplest image with a sample folder and text file.
 
 * __2026-08-13__: 
   * After last week's UI work, this week has been tougher because of backend obstacles when working on this part-time.
