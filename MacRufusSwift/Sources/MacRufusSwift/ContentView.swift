@@ -1,6 +1,6 @@
 import SwiftUI
 import AppKit
-
+import Security
 
 // MARK: - Content view
 
@@ -217,12 +217,20 @@ struct ContentView: View {
                 Button(action: {
                     self.disabled(!hasEnoughToClickWrite)
                     if hasEnoughToClickWrite {
-                        print("hasFullDiskAccess: \(hasFullDiskAccess())")
-                        print("hasAccessToRunDD: \(hasAccessToRunDD())")
-                        print("hasSudoAccess: \(hasSudoAccess())")
+                        print("| hasFullDiskAccess: \(hasFullDiskAccess())")
+                        print("| hasAccessToRunDD: \(hasAccessToRunDD())")
+                        print("| hasSudoAccess: \(hasSudoAccess())")
                         if !hasFullDiskAccess() {
                             requestFullDiskAccess()
-                        } else {
+                        } 
+                        else if !hasAccessToRunDD() {
+                            // popupAlert(title: "Access Denied", message: "This application does not have permission to run the 'dd' command. Please check your system settings.")
+                            requestSudoAccess()
+                        }
+                        else if !hasSudoAccess() {
+                            requestSudoAccess()
+                        }
+                        else {
                             clickToWrite()
                         }
                     }
@@ -334,13 +342,26 @@ struct ContentView: View {
         alert.runModal()
     }
 
-    func hasSudoAccess() -> Bool {
+    // If password is empty, would be non-interactive check for sudo access.  If password is provided, would be interactive prompt for sudo access.
+    func makeSudoAccessProcess(password: String) -> Process {
         let task = Process()
-        task.launchPath = "/usr/bin/sudo"
-        task.arguments = ["-n", "true"] // Non-interactive check
+        task.launchPath = "tudo.sh" // "/usr/bin/sudo"
+        task.arguments = [password.isEmpty ? "-n" : "-S", "true"] // ["-S", "true"] Interactive check with password | ["-n", "true"] // Non-interactive check
         task.standardOutput = Pipe()
-        task.standardError = Pipe()
+        task.standardInput = Pipe()
 
+        if !password.isEmpty {
+            if let inputPipe = task.standardInput as? Pipe {
+                let passwordData = (password + "\n").data(using: .utf8)!
+                inputPipe.fileHandleForWriting.write(passwordData)
+            }
+        }
+
+        return task
+    }
+
+    func hasSudoAccess(password: String = "") -> Bool {
+        let task = makeSudoAccessProcess(password: password)
         do {
             try task.run()
             task.waitUntilExit()
@@ -354,13 +375,23 @@ struct ContentView: View {
     func hasAccessToRunDD() -> Bool {
         let task = Process()
         task.launchPath = "/bin/dd"
-        task.arguments = ["--version"]
+        task.arguments = ["if=/dev/null", "of=/dev/null", "bs=1m"]
         task.standardOutput = Pipe()
         task.standardError = Pipe()
 
         do {
             try task.run()
             task.waitUntilExit()
+            // print out pipe output for debugging
+            if task.terminationStatus > 0 {
+                print("| hasAccessToRunDD terminationStatus: \(task.terminationStatus)")
+                /* 
+                if let errorData = (task.standardError as? Pipe)?.fileHandleForReading.readDataToEndOfFile(),
+                   let errorString = String(data: errorData, encoding: .utf8) {
+                    print("| dd error output: \(errorString)")
+                }
+                */
+            }
             return task.terminationStatus == 0
         } catch {
             print("Error checking access to run dd: \(error)")
@@ -370,12 +401,11 @@ struct ContentView: View {
 
     // Check if this application has Full Disk Access permission
     func hasFullDiskAccess() -> Bool {
-        let testPath = "/System/Library/CoreServices/SystemUIServer.app"
-        let fileManager = FileManager.default
-        return fileManager.isReadableFile(atPath: testPath)
+        return FullDiskAccess.isGranted
     }
 
     func requestFullDiskAccess() {
+        /*
         let alert = NSAlert()
         alert.messageText = "Full Disk Access Required"
         alert.informativeText = "This application requires Full Disk Access to write to external drives. Please grant permission in System Preferences."
@@ -389,7 +419,74 @@ struct ContentView: View {
             if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
                 NSWorkspace.shared.open(url)
             }
+        } */
+        FullDiskAccess.promptIfNotGranted(
+            title: "Enable Full Disk Access for MacRufus",
+            message: "MacRufus requires Full Disk Access to write to external drives.",
+            settingsButtonTitle: "Open Settings",
+            skipButtonTitle: "Later",
+            canBeSuppressed: false, // `true` will display a "Do not ask again." checkbox and honor it
+            icon: nil
+        )
+    }
+
+    func requestSudoAccess() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Administrator Access Required"
+        alert.informativeText = "Requires admin access to write to external drives. Please enter your password."
+        alert.alertStyle = .warning
+        
+        // add a text field for password input
+        let passwordField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        alert.accessoryView = passwordField
+
+        /* // add a label to display status of sudo access check
+        let statusLabel = NSTextField(labelWithString: "")
+        statusLabel.textColor = .red
+        statusLabel.font = NSFont.systemFont(ofSize: 12)
+        alert.accessoryView?.addSubview(statusLabel)
+        */
+
+        alert.addButton(withTitle: "Cancel")
+
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+        
+        // After prompting the user, check the sudo access status again.
+        var hasAccess : Bool = false
+        // Check if OK is clicked and password is entered
+        if alert.buttons[1].state == .on && !passwordField.stringValue.isEmpty {
+            // Attempt to run a command with sudo to verify access
+
+            let task = makeSudoAccessProcess(password: passwordField.stringValue)    
+            do {
+                try task.run()
+                task.waitUntilExit()
+                // Check if the output indicates success or failure
+                var output = ""
+                if let outputPipe = task.standardOutput as? Pipe {
+                    if let outputData = try? outputPipe.fileHandleForReading.read(upToCount: 1024) {
+                        output = String(data: outputData, encoding: .utf8) ?? ""
+                    }
+                }
+                
+                // Check for failure indicators in output
+                let failurePattern = try! NSRegularExpression(pattern: "try\\bagain|(?:(password\\bis\\b)?(wrong|incorrect)(\\bpassword)?)", options: .caseInsensitive)
+                let range = NSRange(location: 0, length: output.utf16.count)
+                let isFailure = failurePattern.firstMatch(in: output, options: [], range: range) != nil
+                    
+                hasAccess = task.terminationStatus == 0 && !isFailure
+            } catch {
+                print("Error checking system authorization: \(error)")
+                hasAccess = false
+            }
+            
+        } else {
+            hasAccess = false
         }
+        // statusLabel.stringValue = hasAccess ? "Sudo access granted." : "Sudo access denied."
+        print("Sudo access checked after prompt. Status: \(hasAccess)")
+        return hasAccess
     }
 } // ContentView
 

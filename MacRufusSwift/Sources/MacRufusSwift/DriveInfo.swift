@@ -8,7 +8,7 @@ struct DriveInfo: Identifiable, Equatable {
     var size: String
     var mountPoint: String // e.g. "/Volumes/MyDrive" or "Not mounted"
     var partitions: [PartitionInfo] = []
-    var partitionScheme: String? = nil
+    var partitionScheme: String? = nil // e.g. "GUID_partition_scheme" or "Apple_APFS_Container"
     var busProtocol: String
     var isRemovable: Bool
     var isVirtual: Bool = false // Based on value of <key>VirtualOrPhysical</key><string>Physical</string> from diskutil info -plist disk2
@@ -21,6 +21,23 @@ struct DriveInfo: Identifiable, Equatable {
         if p.contains("apple fabric")             { return "internaldrive.fill" }
         if p.contains("sd")                       { return "camera.fill" }
         return "externaldrive.fill"
+    }
+}
+
+// Dummy Device with id "null" for testing purposes
+extension DriveInfo {
+    static var dummyDriveInfo: DriveInfo {
+        DriveInfo(
+            id: "null",
+            deviceName: "Dummy Drive",
+            size: "1000000 B",
+            mountPoint: "Not mounted",
+            partitions: [dummyPartitionInfo],
+            partitionScheme: "GUID_partition_scheme",
+            busProtocol: "USB",
+            isRemovable: true,
+            isVirtual: true
+        )
     }
 }
 
@@ -140,7 +157,7 @@ final class DiskUtilService: ObservableObject {
 
         // TODO: Remove debug print
         for (diskId, partitions) in devicePartitions {
-            print("Disk \(diskId) has \(partitions.count) partitions: \(partitions.map { $0.id })")
+            print("* Disk \(diskId) has \(partitions.count) partitions: \(partitions.map { $0.id })")
         }
 
         // Step 3: get info for each disk in parallel
@@ -161,6 +178,7 @@ final class DiskUtilService: ObservableObject {
                     result.append(info) 
                 }
             }
+            result.append(DriveInfo.dummyDriveInfo) // Add dummy drive for testing
             return result.sorted { $0.id < $1.id }
         }
     }

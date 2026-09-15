@@ -13,6 +13,9 @@ struct PartitionInfo: Identifiable, Equatable {
   var isBootable: Bool
 }
 
+// Dummy PartitionInfo for testing purposes
+let dummyPartitionInfo: PartitionInfo = PartitionInfo(id: "null", name: "Test Partition", capacity: 1000000, capacityInUse: 0, mountPoint: "/Volumes/TestPartition", format: "APFS", orderOnDrive: 0, isBootable: false)
+
 struct PartitionMapping: Equatable {
   let driveId: String
   let partitionScheme: String
