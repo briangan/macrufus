@@ -1,4 +1,5 @@
 .vscode
+/rhel-9.4-x86_64-boot.iso
 /electron-app
 /rufus/*
 /MacRufusSwift/.build

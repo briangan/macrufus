@@ -9,9 +9,13 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 
 ## Development So Far
 
+* __2026-09-15__: 
+  * Added tudo.sh as simulation script of sudo for safe testing purpose.
+
 * __2026-09-11__: 
   * A few weeks of break for kids until the kids start school.
   * Added sample_image.iso as simplest image with a sample folder and text file.
+  * Created sudo password prompt popup when sudo access is not there for running disk operation.
 
 * __2026-08-13__: 
   * After last week's UI work, this week has been tougher because of backend obstacles when working on this part-time.
@@ -129,14 +133,18 @@ For functional disk writing operations, the [**Full Disk Access** security setti
 
 ## TODOs
 
-* Device name is missing in using `diskutil` to collect device info.
-* Might have to try using `system_profiler` to collect
-* Partition Options: partition scheme, target system
-* Format Options section: file system, cluster size
-* Status section: progress bar, status text
-* Authorization to execute dd: request to be authorized on the list of "Allow the applications below to access data like Mail, Messages, Safari, and certain administrative settings for all users on this Mac
-* Write image to drive using dd, and update progress bar
-* Partitioning process using diskutil
+* Disk info
+  * Device name is missing in using `diskutil` to collect device info.
+  * Might have to try using `system_profiler` to collect
+* Partition
+  * Partition Options: partition scheme, target system
+  * Format Options section: file system, cluster size
+  * Partitioning process using diskutil
+* GUI
+  * Status section: progress bar, status text
+* Disk operation permissions
+  * Modal alert to request for ask for sudo permission to use `dd` for writing to drives
+  * Write image to drive using dd, and update progress bar
 
 ## Difficult Rufus Features
 
