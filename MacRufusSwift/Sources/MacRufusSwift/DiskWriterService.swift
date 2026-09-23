@@ -88,17 +88,18 @@ final class DiskWriterService: ObservableObject {
         return false
     }
     print("Image file size: \(fileSize) bytes.")
-    self.progress.bytesEstimatedToTransfer = 144000000 // TODO: Restore to fileSize
 
     // Simply non-async run
     self.isWriting = true
 
     let isTesting = false
     if isTesting {
+      self.progress.bytesEstimatedToTransfer = 144000000 // fake file size for testing
       self.runPythonDDTest(progressHandler: { progressUpdate in
           self.updateProgress(with: progressUpdate, progressHandler: progressHandler)
         })
     } else {
+      self.progress.bytesEstimatedToTransfer = fileSize
       self.runDDWriteImage(progressHandler: { progressUpdate in
           self.updateProgress(with: progressUpdate, progressHandler: progressHandler)
         })
@@ -143,17 +144,25 @@ final class DiskWriterService: ObservableObject {
 
     Task { @MainActor in
         do {
-            try await runSubprocess(cmd: "dd", args: ["if=\(imagePath)", "of=/dev/\(driveId)", "bs=\(blockSize)", "status=progress"], 
+            try await runSubprocess(cmd: "sudo", args: ["dd", "if=\(imagePath)", "of=/dev/\(driveId)", "bs=\(blockSize)", "status=progress"], 
               outputHandler: { line in
                 if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
+                  if progressUpdate.isValid() {
                     writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())
-                    
                     progressHandler(progressUpdate)
+                  }
                 }
             }, errorHandler: { line in
-                print("Error from dd command: \(line)")
-                
+                // sometimes dd outputs progress to stderr, so we may want to parse that as well
+                if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
+                  if progressUpdate.isValid() {
+                    writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())   
+                    progressHandler(progressUpdate)
+                  }
+                }
             })
+            // check subProcess terminationStatus
+
             print("dd command completed successfully.")
         } catch {
             print("Error running subprocess: \(error)")
@@ -188,6 +197,6 @@ final class DiskWriterService: ObservableObject {
     self.progress.timeElapsed = progressUpdate.timeElapsed
     self.progress.transferRate = progressUpdate.transferRate
     progressHandler(self.progress.progressPercentage())
-    print("Progress: \(self.progress.bytesTransferred) bytes transferred, \(self.progress.timeElapsed) seconds elapsed, \(self.progress.transferRate) kB/s => \(self.progress.progressPercentage())% complete")
+    // print("* Progress: \(self.progress.bytesTransferred) bytes transferred, \(self.progress.timeElapsed) seconds elapsed, \(self.progress.transferRate) kB/s => \(self.progress.progressPercentage())% complete")
   }
 }

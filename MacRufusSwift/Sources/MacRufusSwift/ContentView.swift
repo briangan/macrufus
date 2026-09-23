@@ -11,8 +11,10 @@ struct ContentView: View {
     @State private var selectedImageURL: URL? = nil
     @State private var hasEnoughToClickWrite: Bool = false
     @State private var progressRatio: Double = 0.0 // 0.0 to 1.0, not percentage
-    @State private var progressStatusText: String = "Ready"
+    @State private var progressStatusText: String = ""
     // @State private var progressStatusResult: String = ""
+    let IS_TESTING = false // Set to true for testing with a mock sudo script, false for production
+    let FAILURE_PASSWORD_PATTERN = try! NSRegularExpression(pattern: "try\\s+again|(?:(password\\s+is\\s+)?(wrong|incorrect|required)(\\s+password)?)", options: .caseInsensitive)
 
     /// Keep selectedDriveID in sync whenever the drive list changes.
     private func syncSelection() {
@@ -32,6 +34,7 @@ struct ContentView: View {
 
         print("Is enough info to enable write button? \(enoughInfo)")
         hasEnoughToClickWrite = enoughInfo
+        progressStatusText = enoughInfo ? "Ready" : ""
     }
     
     private func clickToWrite() {
@@ -44,9 +47,15 @@ struct ContentView: View {
             
         } else {
             // Proceed with the write operation
+            progressStatusText = "Starting..."
             diskWriterService.driveInfo = selectedDrive
             diskWriterService.imageFilePath = imagePath
-            diskWriterService.writeDisk(progressHandler: { progressPercentage in
+            let successRun = diskWriterService.writeDisk(progressHandler: { progressPercentage in
+                if progressPercentage < 100.0 {
+                    progressStatusText = String(format: "%.1f%% complete", progressPercentage)
+                } else {
+                    progressStatusText = "Complete"
+                }
                 DispatchQueue.main.async {
                     self.progressRatio = progressPercentage / 100.0
                 }
@@ -228,6 +237,7 @@ struct ContentView: View {
                             requestSudoAccess()
                         }
                         else if !hasSudoAccess() {
+                            self.progressStatusText = "Request access"
                             requestSudoAccess()
                         }
                         else {
@@ -343,25 +353,24 @@ struct ContentView: View {
     }
 
     // If password is empty, would be non-interactive check for sudo access.  If password is provided, would be interactive prompt for sudo access.
-    func makeSudoAccessProcess(password: String) -> Process {
+    // Only for checking and setting the sudo performission for following sudo commands, but not executing anything else.
+    func makeSudoAccessProcess(shouldPrompt: Bool) -> Process {
         let task = Process()
-        task.launchPath = "tudo.sh" // "/usr/bin/sudo"
-        task.arguments = [password.isEmpty ? "-n" : "-S", "true"] // ["-S", "true"] Interactive check with password | ["-n", "true"] // Non-interactive check
+        // ["-S", "true"] Interactive check with password | ["-n", "true"] // Non-interactive check
+        if IS_TESTING {
+            task.launchPath = "/bin/bash"
+            task.arguments = ["/Users/brian/Downloads/dev/macrufus/MacRufusSwift/tudo.sh", shouldPrompt ? "-S" : "-n", "true"] 
+        } else {
+            task.launchPath = "/usr/bin/sudo"
+            task.arguments = [shouldPrompt ? "-S" : "-n", "true"]
+        }
         task.standardOutput = Pipe()
         task.standardInput = Pipe()
-
-        if !password.isEmpty {
-            if let inputPipe = task.standardInput as? Pipe {
-                let passwordData = (password + "\n").data(using: .utf8)!
-                inputPipe.fileHandleForWriting.write(passwordData)
-            }
-        }
-
         return task
     }
 
-    func hasSudoAccess(password: String = "") -> Bool {
-        let task = makeSudoAccessProcess(password: password)
+    func hasSudoAccess() -> Bool {
+        let task = makeSudoAccessProcess(shouldPrompt: false)
         do {
             try task.run()
             task.waitUntilExit()
@@ -431,59 +440,103 @@ struct ContentView: View {
     }
 
     func requestSudoAccess() -> Bool {
-        let alert = NSAlert()
-        alert.messageText = "Administrator Access Required"
-        alert.informativeText = "Requires admin access to write to external drives. Please enter your password."
-        alert.alertStyle = .warning
         
-        // add a text field for password input
-        let passwordField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
-        alert.accessoryView = passwordField
-
-        /* // add a label to display status of sudo access check
-        let statusLabel = NSTextField(labelWithString: "")
-        statusLabel.textColor = .red
-        statusLabel.font = NSFont.systemFont(ofSize: 12)
-        alert.accessoryView?.addSubview(statusLabel)
-        */
-
-        alert.addButton(withTitle: "Cancel")
-
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
-        
-        // After prompting the user, check the sudo access status again.
         var hasAccess : Bool = false
-        // Check if OK is clicked and password is entered
-        if alert.buttons[1].state == .on && !passwordField.stringValue.isEmpty {
-            // Attempt to run a command with sudo to verify access
+        var stillPrompting : Bool = true
+        var trialCount : Int = 0
+        
+        // Attempt to run a command with sudo to verify access
+        print("...Checking sudo access with provided password...")
+        
+        var isFailure = false
 
-            let task = makeSudoAccessProcess(password: passwordField.stringValue)    
-            do {
-                try task.run()
-                task.waitUntilExit()
-                // Check if the output indicates success or failure
-                var output = ""
-                if let outputPipe = task.standardOutput as? Pipe {
-                    if let outputData = try? outputPipe.fileHandleForReading.read(upToCount: 1024) {
-                        output = String(data: outputData, encoding: .utf8) ?? ""
-                    }
-                }
-                
-                // Check for failure indicators in output
-                let failurePattern = try! NSRegularExpression(pattern: "try\\bagain|(?:(password\\bis\\b)?(wrong|incorrect)(\\bpassword)?)", options: .caseInsensitive)
-                let range = NSRange(location: 0, length: output.utf16.count)
-                let isFailure = failurePattern.firstMatch(in: output, options: [], range: range) != nil
-                    
-                hasAccess = task.terminationStatus == 0 && !isFailure
-            } catch {
-                print("Error checking system authorization: \(error)")
-                hasAccess = false
-            }
+        // Run once, and script might continuously prompt if password is incorrect, until user cancels or max attempts reached
+        let task = makeSudoAccessProcess(shouldPrompt: true)
+        let outPipe = task.standardOutput as! Pipe
+        let outHandle = outPipe.fileHandleForReading
+        
+        
+        while stillPrompting {
+            let alert = NSAlert()
+            alert.messageText = "Administrator Access Required"
+            alert.informativeText = "Requires admin access to write to external drives. Please enter your password."
+            alert.alertStyle = .warning
             
-        } else {
-            hasAccess = false
+            // add a text field for password input
+            let passwordField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+            // Check return key press to trigger the OK button
+            alert.accessoryView = passwordField
+
+            // add a label to display status of sudo access check
+            let statusLabel = NSTextField(labelWithString: "")
+            statusLabel.textColor = .red
+            statusLabel.font = NSFont.systemFont(ofSize: 12)
+            alert.accessoryView?.addSubview(statusLabel)
+            
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "OK")
+            
+            if isFailure {
+                statusLabel.stringValue = "Incorrect password. Please try again."
+            } else {
+                statusLabel.stringValue = ""
+            }
+            alert.runModal()
+
+            // Check if OK is clicked and password is entered
+            // alert passwordField is the first subview of the accessoryView
+
+            if alert.buttons[1].state == .on && !passwordField.stringValue.isEmpty {
+                do {
+                    print(". given password: \(passwordField.stringValue) and is outHandle.readabilityHandler nil ? \(outHandle.readabilityHandler == nil)")
+
+                    if let inputPipe = task.standardInput as? Pipe {
+                        let passwordData = (passwordField.stringValue + "\n").data(using: .utf8)!
+                        inputPipe.fileHandleForWriting.write(passwordData)
+                    }
+ 
+                    // Called whenever there's data available
+                    outHandle.readabilityHandler = { handle in
+                        let data = handle.availableData
+                        guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else {
+                            return
+                        }
+                        
+                        let range = NSRange(location: 0, length: chunk.utf16.count)
+                        isFailure = FAILURE_PASSWORD_PATTERN.firstMatch(in: chunk, options: [], range: range) != nil
+                        statusLabel.stringValue = chunk.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        print("| output chunk (failed? \(isFailure)): \(chunk)")
+                        if isFailure {
+                            // If failure detected, while it keeps prompting try again, ask user to re-enter password
+                            stillPrompting = true
+                            progressStatusText = "Incorrect password.  Try again."
+                        }
+                    }
+                    if trialCount == 0 {
+                        print("Starting sudo access check with prompt ----------------------------")
+                        try task.run()
+                        // task.waitUntilExit()
+                        trialCount = 1
+                        print("Finished call to prompt sudo access ----------------------------")
+                    }
+                    
+                    hasAccess = task.terminationStatus == 0 && !isFailure
+                    print("Sudo access checked after prompt.  terminationStatus: \(task.terminationStatus), hasAccess: \(hasAccess)")
+                } catch {
+                    print("Error checking system authorization: \(error)")
+                    hasAccess = false
+                }
+                stillPrompting = false // exit the loop after checking
+            } // if button
+            trialCount += 1
+            print("* Trial \(trialCount) completed.  hasAccess: \(hasAccess)")
+            if trialCount > 3 {
+                print("Maximum attempts reached. Exiting sudo access prompt.")
+                stillPrompting = false
+            }
         }
+
         // statusLabel.stringValue = hasAccess ? "Sudo access granted." : "Sudo access denied."
         print("Sudo access checked after prompt. Status: \(hasAccess)")
         return hasAccess

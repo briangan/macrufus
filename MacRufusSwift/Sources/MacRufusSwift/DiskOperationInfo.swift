@@ -33,4 +33,8 @@ class DiskOperationProgress: ObservableObject {
     guard bytesEstimatedToTransfer > 0 else { return 0.0 }
     return (Double(bytesTransferred) / Double(bytesEstimatedToTransfer)) * 100.0
   }
+
+  func isValid() -> Bool {
+    return bytesTransferred >= 0 && timeElapsed >= 0 && transferRate >= 0
+  }
 }
