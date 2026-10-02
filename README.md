@@ -1,13 +1,31 @@
 # About This Application
 
 ## Project Plan
+
+### Initial Design
+
 The open-source Windows program [Rufus](https://rufus.ie/en/) is useful free tool to write some ISO image to a disk drive, for example, bootable Windows installation disc.  [Check Rufus' screenshot](rufus.01.png). Cannot find similar free tool in Mac OS.  Thus, this application is trying to simulate the basic functions of Rufus.  It's unusual for me to choose a desktop app, but I feel such disk utility is missing or unknown compared to vast library of utility programs in Windows during this multiple OS installation disks making.  Personally, I get blurry with side projects because not many inspirations and ideas of what to make.  This necessary utility would give me push to develop something.
 
 The framework used is Swift UI within MacRufusSwift subfolder.  Since I have only little knowledge of Swift and desktop app programming, I started using Claude Sonnet 4.6 initially to generate and fix up the basic structure of the app, and amazingly those prompts alone ate up one month's premium request capacity.  So for further modifications, testing and debugging would need assistance. 
 
 There's also consideration of using Electron framework to enforce cross-OS compatibility.  But the problem found so far really requires a pack of library and executives in large space size, compared to Mac-native version in small space size like less than 1 MB.  In fact, just encountered another app with the same goals [Etcher](https://github.com/balena-io/etcher) which is written with TypeScript and installed with 400 MB size.  Maybe future AI conversion will help with head-start.
 
+### Obstacles Even With AI Helps
+
+After couple months of spending part time on this side project with the help of AI, I've gotten used to the syntax and structure of Swift system in most basic form.  At beginning, did not even start within XCode because the codes generated were not meant to be official app released to public.
+
+Days ago, did encounter another open-sourced bootable drive created with image, [MacUSB](https://github.com/Kruszoneq/macUSB), and it's actually written in Swift.  Then this would be the good target in comparison with a newbie's trial to use AI to write entirely new app.  Took glance in the codes, and realized MacUSB is quite full package: neat UI, downloader of actual OS installers, after creation quality checking, etc.  To deploy all these features, really quite many source code and asset files are already created.
+
+Now I really wonder how far I would try with my project.  Probably after succeeding actual drive creation, just finish necessary of preparations for the process to finish to the end, without implementing all options and extra features.
+
+
 ## Development So Far
+
+* __2026-10-02__:
+  * Been using test scripts to test the flow of backend operations before the actual creation of the drive with disk image.
+  * The main problem is really how to run internal, asynchronous commands in the terminal with sudo level permission, and when prompted for password go parse message and request via UI by connecting front to back end.
+  * This understanding of architech of IOS/mobile app is still needed in the human developer while the AI would not know what to do next without being prompted by the developer.
+  * There were couple times that disk image did finish creating the bootable drive, but the steps to achieve that were incorrect.
 
 * __2026-09-15__: 
   * Added tudo.sh as simulation script of sudo for safe testing purpose.
@@ -56,7 +74,7 @@ There's also consideration of using Electron framework to enforce cross-OS compa
 
 ## Local API Performance
 
-Last Updated: 2026-08-13
+Last Updated: 2026-09-23
 
 Since my paid CoPilot premium usage for August was already eaten by early prompts to summarize Rufus written in C++ and generate similar one in Swift for Mac OS, I have to reconsidering paying these AI services for big operations.  So the other option is to try running open-source AI models locally.  I did installation of Ollama and selected models on my own Macbook Pro: Ollama, its own llama3.1:8b, qwen2.5-coder-7b, gemma4:2b, gemma4:4b, and nomic-embed-text.  I'm tied up with these smaller local models because to be developing and running local AI pretty much use up most of my MBP's memory.  I'm preparing my PC with mid-level video card to run AI better, so beginning of setup has been painful: replace privacy-stealing Windows 11 with fresh installation of Windows 10, a more trust-worthy OS that still works with most software.  Linux is installed on the other drive, but the latter is slower SSD and setup on Linux would take more time for another project.  Overall, it's cumbersome to use a large PC, especially now electricity rates and hardware prices are continuously being raised.
 
@@ -64,6 +82,7 @@ Since my paid CoPilot premium usage for August was already eaten by early prompt
 * __gemma4:2b__ - Actually pretty good in analyzing the context of codes, and suggesting solutions.  After typing the class or function synopsis and functionalities, its autocomplete and correction suggestions have been helpful.  For example, once one variable has data type changed, it can auto-correct the other spots of data type for change.  However, its code block generation is sometimes confusing with wrong syntax, and for newbie like me who does not know much about Swift system would be little painful.
 * __gemma4:4b__ - This model requires more than 10GB of memory, so would push the MBP to use swap and heats up the laptop quickly because of intensive GPU usage.  So have not used it much.  One time when a tricky Swift build error could not be resolved by other models, I intentionally switched to this, and it solved it.  I guess this is good choice for little more complexity.  Will try running in PC.
 * __qwen2.5-coder-7b__ - Originally by its name, expected coder to be at least capable of helping out on coding.  But the prompts within some context cannot be correct all the time.  Any big task like code generation of a function would be given inaccurate or incomplete suggestions.  Simpler corrections and documentation queries are still good enough.
+* __qwen3-coder-30b__ - more intensive memory usage
 * __rafw007/qwen35-claude-coder:9b__ - Since qwen2.5-coder-7b often provides incomplete explanations for humans, I tried to upgrade a version to Qwen3.5.  No official smaller quantitized version other than open-source post on Unsloth/Huggingface pages.  Had one try with this one from rafw007: provided code suggestion but no wordy explanation.
 
   
