@@ -13,6 +13,9 @@ final class DiskWriterService: ObservableObject {
   @Published var driveInfo: DriveInfo? = nil
   @Published var imageFilePath: String? = nil
 
+  let FAILURE_PASSWORD_PATTERN = try! NSRegularExpression(pattern: "try\\s+again|(?:(password\\s+is\\s+)?(wrong|incorrect|required)(\\s+password)?)", options: .caseInsensitive)
+  let IS_TESTING = true
+
   // Write a function to check selected drive and image file
   // @return "" if everything is okay, or an error message string if there is an issue
   func checkWriteOperation(drive: DriveInfo, imageFilePath: String) -> String {
@@ -66,8 +69,12 @@ final class DiskWriterService: ObservableObject {
     return checkResult.isEmpty
   }
 
-  // @return : Bool indicating whether the write operation was initiated successfully
-  func writeDisk(progressHandler: @escaping (Double) -> Void) -> Bool {
+  /*
+  @inputHandler: A closure that takes an optional InputProtocol parameter. This closure is called to handle user interactions, such as displaying messages or prompts. If the InputProtocol parameter is nil, it indicates that there is no message to display.
+  @progressHandler: A closure that takes a Double parameter. This closure is called to report the progress of the write operation. The Double parameter represents the percentage of completion (from 0.0 to 100.0).
+  @return : Bool indicating whether the write operation was initiated successfully
+  */
+  func writeDisk(inputHandler: @escaping (Pipe?) -> Void, progressHandler: @escaping (Double) -> Void) -> Bool {
     // Assuming DriveInfo is a struct and it's imported from DriveInfo.swift
     let isReady = isReadyToWrite()
     guard isReady else {
@@ -92,15 +99,14 @@ final class DiskWriterService: ObservableObject {
     // Simply non-async run
     self.isWriting = true
 
-    let isTesting = false
-    if isTesting {
+    if IS_TESTING {
       self.progress.bytesEstimatedToTransfer = 144000000 // fake file size for testing
-      self.runPythonDDTest(progressHandler: { progressUpdate in
+      self.runPythonDDTest(inputHandler: inputHandler, progressHandler: { progressUpdate in
           self.updateProgress(with: progressUpdate, progressHandler: progressHandler)
         })
     } else {
       self.progress.bytesEstimatedToTransfer = fileSize
-      self.runDDWriteImage(progressHandler: { progressUpdate in
+      self.runDDWriteImage(inputHandler: inputHandler, progressHandler: { progressUpdate in
           self.updateProgress(with: progressUpdate, progressHandler: progressHandler)
         })
     }
@@ -111,22 +117,56 @@ final class DiskWriterService: ObservableObject {
 
 
   //===================================
-  // Simulate the dd command output for testing purposes. This function generates a series of progress status lines that mimic what dd would output during a real write operation.
-  func runPythonDDTest(progressHandler: @escaping (DiskOperationProgress) -> Void) {
+  /* Simulate the dd command output for testing purposes. This function generates a series of progress status lines that mimic what dd would output during a real write operation.
+  @inputHandler: A closure that takes an optional InputProtocol parameter. Same as that of writeDisk.
+  @progressHandler: A closure that takes a DiskOperationProgress parameter. This closure is called to report the progress of the write operation.
+  */
+  func runPythonDDTest(inputHandler: @escaping (Pipe?) -> Void, progressHandler: @escaping (DiskOperationProgress) -> Void) {
+    print("runPythonDDTest -----------------------------")
+    print("Log file: \(logURL().path)")
+
+    // Run the Python script in a subprocess and handle its output
+    let task = Process()
+    task.launchPath = "/bin/bash"
+    task.arguments = ["tudo.sh", "python", "../dd_test.py"] 
+    
+    let inputPipe = Pipe()
+    task.standardInput = inputPipe
+    let outPipe = Pipe()
+    task.standardOutput = outPipe
+    let outHandle = outPipe.fileHandleForReading
+    //var lineBuffer = Data()
+
+    // Called whenever there's data available
+    outHandle.readabilityHandler = { handle in
+      guard let line = String(data: handle.availableData, encoding: .utf8) else { return }
+      ///////////////guard !line.isEmpty else { return }
+      print("| \(line)")
+    }
+
+    do {
+      print("Starting runPythonDDTest with command: \(task.launchPath ?? "") and arguments: \(task.arguments ?? []) ------------")
+      writeToLogFile(message: "Starting task w/ args \(task.arguments ?? [])", at: logURL())
+      try task.run()
+      writeToLogFile(message: ".. waiting ..", at: logURL())
+      task.waitUntilExit()
+    } catch {
+      print("Error running subprocess: \(error)")
+    }
+  }
+
+  func runPythonDDTestSubprocess(inputHandler: @escaping (Pipe?) -> Void, progressHandler: @escaping (DiskOperationProgress) -> Void) {
     print("Running Python script to simulate dd command output...")
     print("Log file: \(logURL().path)")
 
     Task { @MainActor in
         do {
-            try await runSubprocess(cmd: "python", args: ["../dd_test.py"], outputHandler: { line in
-                if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
-                    // writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())
-                    
-                    progressHandler(progressUpdate)
-                }
-            }, errorHandler: { line in
-                print("Error from Python script: \(line)")
-            })
+            try await runSubprocess(cmd: "tudo.sh", args: ["python", "../dd_test.py"], 
+                outputHandler: { line in
+                  self.handleCommandOutputAndInput(line: line, inputHandler: inputHandler, progressHandler: progressHandler)
+              }, errorHandler: { line in
+                  self.handleCommandOutputAndInput(line: line, inputHandler: inputHandler, progressHandler: progressHandler)
+              })
             print("Python script completed successfully.")
         } catch {
             print("Error running subprocess: \(error)")
@@ -134,7 +174,11 @@ final class DiskWriterService: ObservableObject {
     }
   }
 
-  func runDDWriteImage(progressHandler: @escaping (DiskOperationProgress) -> Void) {
+  /*
+  @inputHandler: A closure that takes an optional InputProtocol parameter. Same as that of writeDisk.
+  @progressHandler: A closure that takes a DiskOperationProgress parameter. This closure is called to report the progress of the write operation.
+  */
+  func runDDWriteImage(inputHandler: @escaping (Pipe?) -> Void, progressHandler: @escaping (DiskOperationProgress) -> Void) {
     guard let driveId: String = driveInfo?.id, let imagePath = imageFilePath else {
         print("Drive info or image file path is nil.")
         return
@@ -144,22 +188,11 @@ final class DiskWriterService: ObservableObject {
 
     Task { @MainActor in
         do {
-            try await runSubprocess(cmd: "sudo", args: ["dd", "if=\(imagePath)", "of=/dev/\(driveId)", "bs=\(blockSize)", "status=progress"], 
+            try await runSubprocess(cmd: "sudo", args: ["dd", "if=\(imagePath)", "of=/dev/\(driveId)", "bs=\(blockSize)", "status=progress"],
               outputHandler: { line in
-                if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
-                  if progressUpdate.isValid() {
-                    writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())
-                    progressHandler(progressUpdate)
-                  }
-                }
+                self.handleCommandOutputAndInput(line: line, inputHandler: inputHandler, progressHandler: progressHandler)
             }, errorHandler: { line in
-                // sometimes dd outputs progress to stderr, so we may want to parse that as well
-                if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
-                  if progressUpdate.isValid() {
-                    writeToLogFile(message: "  Progress update: \(progressUpdate.stats())", at: logURL())   
-                    progressHandler(progressUpdate)
-                  }
-                }
+                self.handleCommandOutputAndInput(line: line, inputHandler: inputHandler, progressHandler: progressHandler)
             })
             // check subProcess terminationStatus
 
@@ -198,5 +231,15 @@ final class DiskWriterService: ObservableObject {
     self.progress.transferRate = progressUpdate.transferRate
     progressHandler(self.progress.progressPercentage())
     // print("* Progress: \(self.progress.bytesTransferred) bytes transferred, \(self.progress.timeElapsed) seconds elapsed, \(self.progress.transferRate) kB/s => \(self.progress.progressPercentage())% complete")
+  }
+
+  private func handleCommandOutputAndInput(line: String, inputHandler: @escaping (Pipe?) -> Void, progressHandler: @escaping (DiskOperationProgress) -> Void) {
+    print("> \(line)")
+    if line.lowercased().contains("password:") {
+        writeToLogFile(message: " -> password prompted", at: logURL())
+    } else if let progressUpdate: DiskOperationProgress = self.parseDDProgressStatus(line) {
+        writeToLogFile(message: " U: \(progressUpdate.stats())", at: logURL())
+        progressHandler(progressUpdate)
+    }
   }
 }

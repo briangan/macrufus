@@ -18,8 +18,17 @@ Days ago, did encounter another open-sourced bootable drive created with image, 
 
 Now I really wonder how far I would try with my project.  Probably after succeeding actual drive creation, just finish necessary of preparations for the process to finish to the end, without implementing all options and extra features.
 
+### Latest Status
+
+Nonetheless, after days of efforts to learn its framework to run script and handle its output and input, it is still difficult for SwiftUI to handle lower level processes.  Variable AI models and I cannot find the correct way.  Therefore, I'm giving up on this project.  Let AI help me explore other programming projects.
+
 
 ## Development So Far
+
+* __2026-10-20__:
+  * Been using with job search and trying out other features, really left behind this project because last try was painful.
+  * Hint: since code files would eventually grow, large context is needed for AI model to store codes in memory for analysis.  So set environment variable: `OLLAMA_CONTEXT_LENGTH=128000` or bigger
+
 
 * __2026-10-02__:
   * Been using test scripts to test the flow of backend operations before the actual creation of the drive with disk image.
@@ -84,7 +93,7 @@ Since my paid CoPilot premium usage for August was already eaten by early prompt
 * __qwen2.5-coder-7b__ - Originally by its name, expected coder to be at least capable of helping out on coding.  But the prompts within some context cannot be correct all the time.  Any big task like code generation of a function would be given inaccurate or incomplete suggestions.  Simpler corrections and documentation queries are still good enough.
 * __qwen3-coder-30b__ - more intensive memory usage
 * __rafw007/qwen35-claude-coder:9b__ - Since qwen2.5-coder-7b often provides incomplete explanations for humans, I tried to upgrade a version to Qwen3.5.  No official smaller quantitized version other than open-source post on Unsloth/Huggingface pages.  Had one try with this one from rafw007: provided code suggestion but no wordy explanation.
-
+* __coney_/gpt-oss_claude-sonnet4.6:latest__ - After refresh of best local AI now, this variant of GPT-OSS seems attractive.  It can analyze the codes relatively at same and provide more accurate code changes.  But when it suggested one wrong alternative to monitor output of running task, the wrong direction went too far.
   
 ----------------------------------------------
 
