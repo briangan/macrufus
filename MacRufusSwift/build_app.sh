@@ -12,7 +12,7 @@ EXECUTABLE="MacRufusSwift"
 #echo "  ✓ Resources/AppIcon.icns created"
 
 echo "==> Building Swift package (release)..."
-swift build -c release
+swift build -c release -Xswiftc -suppress-warnings
 echo "  ✓ Build complete"
 
 echo "==> Assembling ${APP_BUNDLE}..."

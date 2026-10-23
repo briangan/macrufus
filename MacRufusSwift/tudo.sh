@@ -18,6 +18,8 @@ INI_FILE="$SCRIPT_DIR/tudo.ini"
 # Get current timestamp
 CURRENT_TIME=$(date +%s)
 
+echo "tudo.sh called at $(date +%s)" >> log/tudo.log
+
 # Check if ini file exists
 if [[ -f "$INI_FILE" ]]; then
     # Read the timestamp from the ini file
@@ -39,6 +41,7 @@ fi
 # Check for non-interactive mode: either argument 1 or argument 2 is "-n"
 if [[ "$1" == "-n" || "$2" == "-n" ]]; then
     echo "tudo: a password is required"
+    echo
     exit 1
 fi
 
@@ -48,21 +51,30 @@ MAX_ATTEMPTS=3
 
 while [[ $ATTEMPTS -lt $MAX_ATTEMPTS ]]; do
     # While letters of password are being typed, they will not be displayed on the screen.  This is a security feature to prevent shoulder surfing.
-    read -s -p "Password: " INPUT_PASSWORD
+    if [[ $ATTEMPTS -gt 0 ]]; then
+        echo "Sorry, try again. "
+        printf "Password: "
+    else
+        printf "Password: "
+    fi
+    read -s INPUT_PASSWORD
     echo
+    echo "Given password at $CURRENT_TIME" > log/tudo.log
+    echo "Given: $INPUT_PASSWORD" >> log/tudo.log
     if [[ "$INPUT_PASSWORD" == "$PASSWORD" ]]; then
         # Password correct, update timestamp
         echo $CURRENT_TIME > "$INI_FILE"
         # Execute the command passed to the script (if any and exclude the argument starting with "-" )
+        echo "tudo running: ${@:1}" >> log/tudo.log
         if [[ $# -gt 0 ]] && [[ "$1" != -* ]]; then
             "${@:1}"
         fi
         exit 0
     else
         ATTEMPTS=$((ATTEMPTS + 1))
-        if [[ $ATTEMPTS -lt $MAX_ATTEMPTS ]]; then
-            echo "Sorry, try again."
-        fi
+        # if [[ $ATTEMPTS -lt $MAX_ATTEMPTS ]]; then
+        #     echo "Sorry, try again."
+        # fi
     fi
 done
 
